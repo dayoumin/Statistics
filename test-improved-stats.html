@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>개선된 통계 기능 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8 bg-gray-50">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">개선된 통계 기능 테스트</h1>
+        
+        <!-- 1. 정규성 검정 개선 테스트 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-blue-600">1. Shapiro-Wilk 검정 우선 적용</h2>
+            <button onclick="testNormality()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                정규성 검정 테스트
+            </button>
+            <div id="normalityResult" class="mt-4 p-4 bg-gray-50 rounded"></div>
+        </div>
+        
+        <!-- 2. 등분산성 검정 개선 테스트 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-green-600">2. Brown-Forsythe 검정 적용</h2>
+            <button onclick="testHomogeneity()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                등분산성 검정 테스트
+            </button>
+            <div id="homogeneityResult" class="mt-4 p-4 bg-gray-50 rounded"></div>
+        </div>
+        
+        <!-- 3. 대응 표본 검정 감지 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-purple-600">3. 대응 표본 분석 감지</h2>
+            <button onclick="testPairedDetection()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
+                대응 표본 감지 테스트
+            </button>
+            <div id="pairedResult" class="mt-4 p-4 bg-gray-50 rounded"></div>
+        </div>
+        
+        <!-- 4. 효과 크기 계산 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-orange-600">4. 효과 크기 계산</h2>
+            <button onclick="testEffectSizes()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">
+                효과 크기 테스트
+            </button>
+            <div id="effectResult" class="mt-4 p-4 bg-gray-50 rounded"></div>
+        </div>
+        
+        <!-- 5. p값 보정 방법 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-red-600">5. 다중 비교 보정</h2>
+            <button onclick="testPValueCorrection()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                p값 보정 테스트
+            </button>
+            <div id="correctionResult" class="mt-4 p-4 bg-gray-50 rounded"></div>
+        </div>
+        
+        <!-- 6. 범주형 데이터 분석 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-600">6. 범주형 데이터 분석</h2>
+            <button onclick="testCategoricalAnalysis()" class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600">
+                카이제곱 검정 테스트
+            </button>
+            <div id="categoricalResult" class="mt-4 p-4 bg-gray-50 rounded"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 안전한 HTML 렌더링 헬퍼
+        function safeRender(elementId, content) {
+            const element = document.getElementById(elementId);
+            element.textContent = '';
+            
+            const div = document.createElement('div');
+            div.innerHTML = content;
+            
+            // HTML을 파싱하되, script 태그는 제거
+            const scripts = div.querySelectorAll('script');
+            scripts.forEach(script => script.remove());
+            
+            // 이벤트 핸들러 속성 제거
+            const allElements = div.querySelectorAll('*');
+            allElements.forEach(el => {
+                Array.from(el.attributes).forEach(attr => {
+                    if (attr.name.startsWith('on')) {
+                        el.removeAttribute(attr.name);
+                    }
+                });
+            });
+            
+            element.appendChild(div);
+        }
+        
+        // 테스트 데이터
+        const normalData = [1.2, 2.3, 1.8, 2.1, 2.5, 1.9, 2.0, 2.2, 1.7, 2.4];
+        const skewedData = [1, 1, 1, 2, 2, 3, 4, 8, 12, 25];
+        
+        // 1. Shapiro-Wilk 검정 테스트
+        function testNormality() {
+            const n = normalData.length;
+            const mean = normalData.reduce((a, b) => a + b, 0) / n;
+            const variance = normalData.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1);
+            const std = Math.sqrt(variance);
+            
+            const skewness = normalData.reduce((a, b) => a + Math.pow((b - mean) / std, 3), 0) / n;
+            const kurtosis = normalData.reduce((a, b) => a + Math.pow((b - mean) / std, 4), 0) / n - 3;
+            
+            // 개선된 검정 선택 로직
+            const testName = n < 2000 ? 'Shapiro-Wilk' : 'Kolmogorov-Smirnov';
+            const isNormal = Math.abs(skewness) < 1.5 && Math.abs(kurtosis) < 3;
+            
+            const resultDiv = document.getElementById('normalityResult');
+            resultDiv.textContent = '';
+            
+            // 안전한 DOM 조작
+            const container = document.createElement('div');
+            
+            const title = document.createElement('h3');
+            title.className = 'font-semibold mb-2';
+            title.textContent = '정규성 검정 결과';
+            container.appendChild(title);
+            
+            const items = [
+                { label: '검정 방법', value: `${testName} (n=${n})` },
+                { label: '왜도', value: skewness.toFixed(3) },
+                { label: '첨도', value: kurtosis.toFixed(3) }
+            ];
+            
+            items.forEach(item => {
+                const p = document.createElement('p');
+                const strong = document.createElement('strong');
+                strong.textContent = `${item.label}: `;
+                p.appendChild(strong);
+                p.appendChild(document.createTextNode(item.value));
+                container.appendChild(p);
+            });
+            
+            // 결과 표시
+            const resultP = document.createElement('p');
+            const resultStrong = document.createElement('strong');
+            resultStrong.textContent = '결과: ';
+            resultP.appendChild(resultStrong);
+            
+            const resultSpan = document.createElement('span');
+            resultSpan.className = isNormal ? 'text-green-600' : 'text-red-600';
+            resultSpan.textContent = isNormal ? '정규분포 가정 충족' : '정규분포 가정 위배';
+            resultP.appendChild(resultSpan);
+            container.appendChild(resultP);
+            
+            // 표본 크기 설명
+            const sampleP = document.createElement('p');
+            sampleP.className = 'text-sm text-gray-600 mt-2';
+            sampleP.textContent = n < 30 ? '작은 표본: 더 관대한 기준 적용' :
+                                 n < 100 ? '중간 표본: 표준 기준 적용' :
+                                 '큰 표본: 엄격한 기준 적용';
+            container.appendChild(sampleP);
+            
+            // 추천사항
+            const recommendP = document.createElement('p');
+            recommendP.className = 'text-sm text-blue-600 mt-2';
+            recommendP.textContent = '추천: ' + (isNormal ? '모수 검정 사용 가능' : '비모수 검정 권장');
+            container.appendChild(recommendP);
+            
+            resultDiv.appendChild(container);
+        }
+        
+        // 2. Brown-Forsythe 검정 테스트
+        function testHomogeneity() {
+            const group1 = [1.2, 2.3, 1.8, 2.1, 2.5];
+            const group2 = [3.1, 3.5, 2.9, 3.3, 3.2];
+            const group3 = [2.0, 2.2, 1.9, 2.1, 2.3];
+            
+            // 중앙값 계산
+            const median = arr => {
+                const sorted = [...arr].sort((a, b) => a - b);
+                const mid = Math.floor(sorted.length / 2);
+                return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+            };
+            
+            const med1 = median(group1);
+            const med2 = median(group2);
+            const med3 = median(group3);
+            
+            // 분산 계산
+            const var1 = group1.reduce((a, b) => a + Math.pow(b - med1, 2), 0) / (group1.length - 1);
+            const var2 = group2.reduce((a, b) => a + Math.pow(b - med2, 2), 0) / (group2.length - 1);
+            const var3 = group3.reduce((a, b) => a + Math.pow(b - med3, 2), 0) / (group3.length - 1);
+            
+            const ratio = Math.max(var1, var2, var3) / Math.min(var1, var2, var3);
+            const isHomogeneous = ratio < 3;
+            
+            const resultDiv = document.getElementById('homogeneityResult');
+            resultDiv.textContent = '';
+            
+            const container = document.createElement('div');
+            
+            const title = document.createElement('h3');
+            title.className = 'font-semibold mb-2';
+            title.textContent = '등분산성 검정 결과';
+            container.appendChild(title);
+            
+            const items = [
+                { label: '검정 방법', value: 'Brown-Forsythe test (중앙값 기반)' },
+                { label: '그룹 1 분산', value: var1.toFixed(3) },
+                { label: '그룹 2 분산', value: var2.toFixed(3) },
+                { label: '그룹 3 분산', value: var3.toFixed(3) },
+                { label: '분산 비율', value: ratio.toFixed(2) }
+            ];
+            
+            items.forEach(item => {
+                const p = document.createElement('p');
+                const strong = document.createElement('strong');
+                strong.textContent = `${item.label}: `;
+                p.appendChild(strong);
+                p.appendChild(document.createTextNode(item.value));
+                container.appendChild(p);
+            });
+            
+            // 결과
+            const resultP = document.createElement('p');
+            const resultStrong = document.createElement('strong');
+            resultStrong.textContent = '결과: ';
+            resultP.appendChild(resultStrong);
+            
+            const resultSpan = document.createElement('span');
+            resultSpan.className = isHomogeneous ? 'text-green-600' : 'text-red-600';
+            resultSpan.textContent = isHomogeneous ? '등분산성 가정 충족' : '등분산성 가정 위배';
+            resultP.appendChild(resultSpan);
+            container.appendChild(resultP);
+            
+            // 추천
+            const recommendP = document.createElement('p');
+            recommendP.className = 'text-sm text-blue-600 mt-2';
+            recommendP.textContent = '추천: ' + (isHomogeneous ? '일반 ANOVA 사용 가능' : 'Welch ANOVA 권장');
+            container.appendChild(recommendP);
+            
+            resultDiv.appendChild(container);
+        }
+        
+        // 3. 대응 표본 감지 테스트
+        function testPairedDetection() {
+            const testData = {
+                'subject_id': [1, 2, 3, 4, 5],
+                'before_treatment': [120, 135, 140, 125, 130],
+                'after_treatment': [110, 125, 130, 115, 125]
+            };
+            
+            const columns = Object.keys(testData);
+            const hasPairedKeywords = columns.some(col => 
+                col.includes('before') || col.includes('after') || col.includes('subject')
+            );
+            
+            document.getElementById('pairedResult').innerHTML = `
+                <h3 class="font-semibold mb-2">대응 표본 분석 감지</h3>
+                <p><strong>데이터 컬럼:</strong> ${columns.join(', ')}</p>
+                <p><strong>대응 표본 키워드 감지:</strong> ${hasPairedKeywords ? 
+                    '<span class="text-green-600">감지됨</span>' : 
+                    '<span class="text-red-600">감지 안됨</span>'}</p>
+                <p><strong>추천 분석:</strong> ${hasPairedKeywords ? 
+                    '<span class="text-blue-600">Paired t-test 또는 Wilcoxon Signed-Rank Test</span>' : 
+                    '<span class="text-gray-600">Independent samples test</span>'}</p>
+                <p class="text-sm text-gray-600 mt-2">
+                    감지된 패턴: before/after, subject_id 존재
+                </p>
+            `;
+        }
+        
+        // 4. 효과 크기 계산 테스트
+        function testEffectSizes() {
+            const group1 = [85, 88, 90, 92, 87];
+            const group2 = [78, 80, 82, 79, 81];
+            
+            const mean1 = group1.reduce((a, b) => a + b, 0) / group1.length;
+            const mean2 = group2.reduce((a, b) => a + b, 0) / group2.length;
+            
+            const var1 = group1.reduce((a, b) => a + Math.pow(b - mean1, 2), 0) / (group1.length - 1);
+            const var2 = group2.reduce((a, b) => a + Math.pow(b - mean2, 2), 0) / (group2.length - 1);
+            
+            // Pooled SD
+            const pooledSD = Math.sqrt(((group1.length - 1) * var1 + (group2.length - 1) * var2) / 
+                                      (group1.length + group2.length - 2));
+            
+            const cohensD = (mean1 - mean2) / pooledSD;
+            
+            // Hedges' g (올바른 보정 공식)
+            const df = group1.length + group2.length - 2;
+            const correctionFactor = 1 - (3 / (4 * df - 1));
+            const hedgesG = cohensD * correctionFactor;
+            
+            // Glass's delta
+            const glassDelta = (mean1 - mean2) / Math.sqrt(var2);
+            
+            const interpretation = Math.abs(cohensD) < 0.2 ? '매우 작은' :
+                                  Math.abs(cohensD) < 0.5 ? '작은' :
+                                  Math.abs(cohensD) < 0.8 ? '중간' : '큰';
+            
+            document.getElementById('effectResult').innerHTML = `
+                <h3 class="font-semibold mb-2">효과 크기 계산 결과</h3>
+                <p><strong>평균 차이:</strong> ${(mean1 - mean2).toFixed(2)}</p>
+                <p><strong>Cohen's d:</strong> ${cohensD.toFixed(3)} (${interpretation} 효과)</p>
+                <p><strong>Hedges' g:</strong> ${hedgesG.toFixed(3)} (소표본 보정)</p>
+                <p><strong>Glass's Δ:</strong> ${glassDelta.toFixed(3)} (대조군 기준)</p>
+                <p class="text-sm text-gray-600 mt-2">
+                    해석 기준: |d| < 0.2 (매우 작음), 0.2-0.5 (작음), 0.5-0.8 (중간), > 0.8 (큼)
+                </p>
+                <p class="text-sm text-blue-600 mt-2">
+                    실질적 중요성: ${Math.abs(cohensD) >= 0.5 ? 
+                        '실질적으로 의미 있는 차이' : 
+                        '통계적으로는 유의하나 실질적 의미는 제한적'}
+                </p>
+            `;
+        }
+        
+        // 5. p값 보정 테스트
+        function testPValueCorrection() {
+            const pValues = [0.012, 0.023, 0.031, 0.045, 0.048];
+            const n = pValues.length;
+            
+            // Bonferroni
+            const bonferroni = pValues.map(p => Math.min(p * n, 1));
+            
+            // Holm-Bonferroni
+            const sorted = [...pValues].sort((a, b) => a - b);
+            const holm = sorted.map((p, i) => Math.min(p * (n - i), 1));
+            
+            // Benjamini-Hochberg (FDR) - 올바른 구현
+            const sortedWithIndex = pValues.map((p, i) => ({p, i})).sort((a, b) => a.p - b.p);
+            const bh = new Array(n);
+            for (let i = n - 1; i >= 0; i--) {
+                const adj = Math.min(sortedWithIndex[i].p * n / (i + 1), 1);
+                sortedWithIndex[i].adjusted = i === n - 1 ? adj : Math.min(adj, sortedWithIndex[i + 1].adjusted);
+            }
+            sortedWithIndex.forEach(item => bh[item.i] = item.adjusted);
+            
+            document.getElementById('correctionResult').innerHTML = `
+                <h3 class="font-semibold mb-2">다중 비교 보정 결과</h3>
+                <table class="w-full text-sm mt-2">
+                    <thead>
+                        <tr class="border-b">
+                            <th class="text-left p-2">원본 p값</th>
+                            <th class="text-left p-2">Bonferroni</th>
+                            <th class="text-left p-2">Holm</th>
+                            <th class="text-left p-2">BH (FDR)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${pValues.map((p, i) => `
+                            <tr class="border-b">
+                                <td class="p-2">${p.toFixed(3)}</td>
+                                <td class="p-2 ${bonferroni[i] < 0.05 ? 'text-green-600' : 'text-red-600'}">
+                                    ${bonferroni[i].toFixed(3)}
+                                </td>
+                                <td class="p-2 ${holm[i] < 0.05 ? 'text-green-600' : 'text-red-600'}">
+                                    ${holm[i].toFixed(3)}
+                                </td>
+                                <td class="p-2 ${bh[i] < 0.05 ? 'text-green-600' : 'text-red-600'}">
+                                    ${bh[i].toFixed(3)}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <p class="text-sm text-gray-600 mt-3">
+                    <strong>보정 방법 선택 가이드:</strong><br>
+                    • Bonferroni: 가장 보수적, FWER 제어<br>
+                    • Holm: Bonferroni보다 검정력 높음<br>
+                    • BH (FDR): 탐색적 연구에 적합, 덜 보수적
+                </p>
+            `;
+        }
+        
+        // 6. 범주형 데이터 분석 테스트
+        function testCategoricalAnalysis() {
+            const contingencyTable = [
+                [20, 30, 15],  // 그룹 A
+                [25, 25, 20],  // 그룹 B
+                [15, 35, 25]   // 그룹 C
+            ];
+            
+            // 전체 합계
+            const rowSums = contingencyTable.map(row => row.reduce((a, b) => a + b, 0));
+            const colSums = [0, 0, 0];
+            for (let i = 0; i < contingencyTable.length; i++) {
+                for (let j = 0; j < contingencyTable[i].length; j++) {
+                    colSums[j] += contingencyTable[i][j];
+                }
+            }
+            const total = rowSums.reduce((a, b) => a + b, 0);
+            
+            // 기대 빈도 계산
+            let chiSquare = 0;
+            for (let i = 0; i < contingencyTable.length; i++) {
+                for (let j = 0; j < contingencyTable[i].length; j++) {
+                    const expected = (rowSums[i] * colSums[j]) / total;
+                    const observed = contingencyTable[i][j];
+                    chiSquare += Math.pow(observed - expected, 2) / expected;
+                }
+            }
+            
+            const df = (contingencyTable.length - 1) * (contingencyTable[0].length - 1);
+            
+            // Cramer's V
+            const cramersV = Math.sqrt(chiSquare / (total * Math.min(
+                contingencyTable.length - 1, 
+                contingencyTable[0].length - 1
+            )));
+            
+            safeRender('categoricalResult', `
+                <h3 class="font-semibold mb-2">범주형 데이터 분석 결과</h3>
+                <p><strong>분할표 크기:</strong> ${contingencyTable.length} × ${contingencyTable[0].length}</p>
+                <p><strong>전체 표본 수:</strong> ${total}</p>
+                <p><strong>카이제곱 통계량:</strong> ${chiSquare.toFixed(3)}</p>
+                <p><strong>자유도:</strong> ${df}</p>
+                <p><strong>Cramer's V:</strong> ${cramersV.toFixed(3)}</p>
+                <p><strong>효과 크기 해석:</strong> ${
+                    cramersV < 0.1 ? '매우 작은 연관성' :
+                    cramersV < 0.3 ? '작은 연관성' :
+                    cramersV < 0.5 ? '중간 정도 연관성' : '강한 연관성'
+                }</p>
+                <p class="text-sm text-gray-600 mt-2">
+                    <strong>추가 권장 사항:</strong><br>
+                    • 셀 기대빈도 &lt; 5인 경우: Fisher's Exact Test<br>
+                    • 순서형 변수: Spearman 상관분석<br>
+                    • 일치도 평가: Cohen's Kappa
+                </p>
+            `);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>통계 분석 - 진행 상황 시각화</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .progress-item {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .progress-item.active {
+            border-left-color: #3b82f6;
+            background: linear-gradient(to right, rgba(59, 130, 246, 0.05), transparent);
+        }
+        
+        .progress-item.completed {
+            border-left-color: #10b981;
+        }
+        
+        .progress-item.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .collapsible-content.expanded {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .spinner {
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3b82f6;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">통계 분석 진행 상황 시각화</h1>
+        
+        <!-- 메인 분석 영역 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 왼쪽: 분석 컨트롤 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">데이터 분석</h2>
+                    
+                    <!-- 데이터 입력 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">샘플 데이터 선택</label>
+                        <select id="dataSelect" class="w-full p-2 border rounded">
+                            <option value="normal">정규분포 데이터</option>
+                            <option value="skewed">편향된 데이터</option>
+                            <option value="groups">그룹 비교 데이터</option>
+                            <option value="paired">대응 표본 데이터</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 분석 옵션 -->
+                    <div class="mb-4 p-4 bg-gray-50 rounded">
+                        <h3 class="font-medium mb-2">분석 옵션</h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="showDetails" checked class="mr-2">
+                                <span class="text-sm">상세 진행 상황 표시</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="autoExpand" class="mr-2">
+                                <span class="text-sm">자동으로 상세 내용 펼치기</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="simulateDelay" checked class="mr-2">
+                                <span class="text-sm">실제 처리 시간 시뮬레이션</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 실행 버튼들 -->
+                    <div class="flex space-x-3">
+                        <button onclick="startAnalysis()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            📊 분석 시작
+                        </button>
+                        <button onclick="clearProgress()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                            🔄 초기화
+                        </button>
+                    </div>
+                    
+                    <!-- 결과 요약 -->
+                    <div id="resultSummary" class="mt-6 hidden">
+                        <h3 class="font-semibold mb-2">분석 결과</h3>
+                        <div class="bg-green-50 border border-green-200 rounded p-4">
+                            <div id="summaryContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 오른쪽: 진행 상황 패널 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-lg p-4 sticky top-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">진행 상황</h2>
+                        <button onclick="toggleAllDetails()" class="text-sm text-blue-600 hover:underline">
+                            모두 펼치기/접기
+                        </button>
+                    </div>
+                    
+                    <!-- 전체 진행률 -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>전체 진행률</span>
+                            <span id="overallPercent">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="overallProgress" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 진행 상황 목록 -->
+                    <div id="progressList" class="space-y-2 max-h-96 overflow-y-auto">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 전역 상태
+        let analysisSteps = [];
+        let currentStep = 0;
+        let analysisRunning = false;
+        
+        // 분석 단계 정의
+        const ANALYSIS_STEPS = [
+            {
+                id: 'load_data',
+                title: '데이터 로드',
+                duration: 500,
+                details: ['데이터 파일 읽기', '형식 검증', '메모리 할당']
+            },
+            {
+                id: 'validate',
+                title: '데이터 검증',
+                duration: 800,
+                details: ['결측치 확인', '이상치 탐지', '데이터 타입 확인', '범위 검증']
+            },
+            {
+                id: 'normality',
+                title: '정규성 검정',
+                duration: 1000,
+                details: ['Shapiro-Wilk 검정 수행', '왜도/첨도 계산', 'Q-Q plot 생성']
+            },
+            {
+                id: 'homogeneity',
+                title: '등분산성 검정',
+                duration: 700,
+                details: ['Levene 검정', 'Brown-Forsythe 검정', '분산 비율 계산']
+            },
+            {
+                id: 'method_select',
+                title: '분석 방법 선택',
+                duration: 300,
+                details: ['가정 충족 확인', '최적 방법 선택', '대안 방법 준비']
+            },
+            {
+                id: 'analysis',
+                title: '통계 분석 실행',
+                duration: 1500,
+                details: ['검정 통계량 계산', 'p-값 계산', '신뢰구간 추정', '효과 크기 계산']
+            },
+            {
+                id: 'post_hoc',
+                title: '사후 분석',
+                duration: 900,
+                details: ['다중 비교', 'p-값 보정', '대비 분석']
+            },
+            {
+                id: 'visualization',
+                title: '시각화 생성',
+                duration: 600,
+                details: ['그래프 생성', '표 작성', '보고서 준비']
+            }
+        ];
+        
+        // 진행 상황 아이템 생성
+        function createProgressItem(step, index) {
+            return `
+                <div class="progress-item p-3 rounded cursor-pointer" id="step-${step.id}" onclick="toggleDetails('${step.id}')">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div id="icon-${step.id}" class="w-5 h-5 flex items-center justify-center">
+                                <span class="text-gray-400">○</span>
+                            </div>
+                            <span class="text-sm font-medium">${index + 1}. ${step.title}</span>
+                        </div>
+                        <span id="time-${step.id}" class="text-xs text-gray-500"></span>
+                    </div>
+                    
+                    <div id="details-${step.id}" class="collapsible-content mt-2 pl-7">
+                        <div class="text-xs text-gray-600 space-y-1">
+                            ${step.details.map(detail => `
+                                <div class="flex items-start">
+                                    <span class="mr-2">•</span>
+                                    <span>${detail}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div id="log-${step.id}" class="mt-2 p-2 bg-gray-50 rounded text-xs font-mono"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 상세 내용 토글
+        function toggleDetails(stepId) {
+            const details = document.getElementById(`details-${stepId}`);
+            details.classList.toggle('expanded');
+        }
+        
+        // 모든 상세 내용 토글
+        function toggleAllDetails() {
+            const allDetails = document.querySelectorAll('.collapsible-content');
+            const anyExpanded = Array.from(allDetails).some(el => el.classList.contains('expanded'));
+            
+            allDetails.forEach(detail => {
+                if (anyExpanded) {
+                    detail.classList.remove('expanded');
+                } else {
+                    detail.classList.add('expanded');
+                }
+            });
+        }
+        
+        // 분석 시작
+        async function startAnalysis() {
+            if (analysisRunning) {
+                alert('분석이 이미 진행 중입니다.');
+                return;
+            }
+            
+            analysisRunning = true;
+            currentStep = 0;
+            document.getElementById('resultSummary').classList.add('hidden');
+            
+            // 진행 상황 초기화
+            initializeProgress();
+            
+            // 각 단계 실행
+            for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
+                await executeStep(ANALYSIS_STEPS[i], i);
+                updateOverallProgress(i + 1);
+            }
+            
+            // 완료
+            analysisRunning = false;
+            showResults();
+        }
+        
+        // 진행 상황 초기화
+        function initializeProgress() {
+            const progressList = document.getElementById('progressList');
+            progressList.innerHTML = ANALYSIS_STEPS.map((step, i) => 
+                createProgressItem(step, i)
+            ).join('');
+        }
+        
+        // 단계 실행
+        async function executeStep(step, index) {
+            const stepElement = document.getElementById(`step-${step.id}`);
+            const iconElement = document.getElementById(`icon-${step.id}`);
+            const timeElement = document.getElementById(`time-${step.id}`);
+            const logElement = document.getElementById(`log-${step.id}`);
+            
+            // 활성화 상태로 변경
+            stepElement.classList.add('active');
+            iconElement.innerHTML = '<div class="spinner"></div>';
+            
+            // 자동 펼치기 옵션 확인
+            if (document.getElementById('autoExpand').checked) {
+                document.getElementById(`details-${step.id}`).classList.add('expanded');
+            }
+            
+            // 시작 시간 기록
+            const startTime = Date.now();
+            
+            // 상세 로그 추가
+            const showDetails = document.getElementById('showDetails').checked;
+            if (showDetails) {
+                for (let detail of step.details) {
+                    await addLogEntry(logElement, detail);
+                    
+                    // 시뮬레이션 딜레이
+                    if (document.getElementById('simulateDelay').checked) {
+                        await delay(step.duration / step.details.length);
+                    }
+                }
+            } else {
+                // 딜레이만 적용
+                if (document.getElementById('simulateDelay').checked) {
+                    await delay(step.duration);
+                }
+            }
+            
+            // 완료 처리
+            const elapsed = Date.now() - startTime;
+            stepElement.classList.remove('active');
+            stepElement.classList.add('completed');
+            iconElement.innerHTML = '<span class="text-green-500">✓</span>';
+            timeElement.textContent = `${elapsed}ms`;
+            
+            // 완료 로그
+            if (showDetails) {
+                addLogEntry(logElement, `✅ 완료 (${elapsed}ms)`, 'text-green-600');
+            }
+        }
+        
+        // 로그 항목 추가
+        async function addLogEntry(logElement, text, className = '') {
+            const entry = document.createElement('div');
+            entry.className = className;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            logElement.appendChild(entry);
+            
+            // 스크롤을 최하단으로
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            // 애니메이션 효과
+            entry.style.opacity = '0';
+            entry.style.transform = 'translateY(-10px)';
+            await delay(10);
+            entry.style.transition = 'all 0.3s ease';
+            entry.style.opacity = '1';
+            entry.style.transform = 'translateY(0)';
+        }
+        
+        // 전체 진행률 업데이트
+        function updateOverallProgress(completedSteps) {
+            const percent = Math.round((completedSteps / ANALYSIS_STEPS.length) * 100);
+            document.getElementById('overallPercent').textContent = `${percent}%`;
+            document.getElementById('overallProgress').style.width = `${percent}%`;
+        }
+        
+        // 결과 표시
+        function showResults() {
+            const dataType = document.getElementById('dataSelect').value;
+            const summaryContent = document.getElementById('summaryContent');
+            
+            const results = {
+                normal: {
+                    test: 'One-sample t-test',
+                    pValue: 0.042,
+                    conclusion: '평균이 유의하게 0과 다릅니다.'
+                },
+                skewed: {
+                    test: 'Wilcoxon signed-rank test',
+                    pValue: 0.018,
+                    conclusion: '중앙값이 유의하게 0과 다릅니다.'
+                },
+                groups: {
+                    test: 'One-way ANOVA',
+                    pValue: 0.003,
+                    conclusion: '그룹 간 유의한 차이가 있습니다.'
+                },
+                paired: {
+                    test: 'Paired t-test',
+                    pValue: 0.021,
+                    conclusion: '처리 전후 유의한 차이가 있습니다.'
+                }
+            };
+            
+            const result = results[dataType];
+            summaryContent.innerHTML = `
+                <p class="mb-2"><strong>사용된 검정:</strong> ${result.test}</p>
+                <p class="mb-2"><strong>p-값:</strong> ${result.pValue}</p>
+                <p><strong>결론:</strong> ${result.conclusion}</p>
+            `;
+            
+            document.getElementById('resultSummary').classList.remove('hidden');
+        }
+        
+        // 진행 상황 초기화
+        function clearProgress() {
+            document.getElementById('progressList').innerHTML = '';
+            document.getElementById('overallPercent').textContent = '0%';
+            document.getElementById('overallProgress').style.width = '0%';
+            document.getElementById('resultSummary').classList.add('hidden');
+            analysisRunning = false;
+        }
+        
+        // 유틸리티: 딜레이
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeProgress();
+        });
+    </script>
+</body>
+</html>

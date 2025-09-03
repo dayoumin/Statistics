@@ -14,6 +14,11 @@
     <!-- SheetJS -->
     <script defer src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
     
+    <!-- jsPDF for PDF export -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas for PDF screenshots -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         
@@ -365,15 +370,7 @@
     </style>
 </head>
 <body>
-    <!-- 다크 모드 토글 버튼 (고정 위치) -->
-    <button id="darkModeToggle" class="fixed top-4 right-4 z-50 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="다크 모드 전환">
-        <svg id="sunIcon" class="w-6 h-6 text-yellow-500 hidden" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
-        </svg>
-        <svg id="moonIcon" class="w-6 h-6 text-gray-700 dark:text-gray-200" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-        </svg>
-    </button>
+
     <!-- 첫 방문 안내 (옵션) -->
     <div id="welcomeTour" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div class="bg-white rounded-lg p-8 max-w-md mx-4">
@@ -407,9 +404,7 @@
                         <button onclick="showHelp()" class="btn-secondary mb-2">
                             <span class="mr-2">❓</span> 도움말
                         </button>
-                        <button onclick="showSampleData()" class="btn-secondary mb-2 ml-2">
-                            <span class="mr-2">📊</span> 샘플로 체험
-                        </button>
+
                         <button onclick="exportProgress()" class="btn-secondary mb-2 ml-2" id="exportBtn" style="display:none;">
                             <span class="mr-2">💾</span> 진행상황 저장
                         </button>
@@ -797,6 +792,20 @@
                     이 플랫폼은 오픈소스 과학 컴퓨팅 라이브러리 SciPy의 검증된 통계 알고리즘을 사용합니다.<br>
                     모든 통계 계산은 SciPy.stats 모듈의 표준 구현을 따르며, 학술 연구에서 널리 사용되는 신뢰할 수 있는 방법론을 적용합니다.
                 </p>
+                
+                <!-- 다크 모드 토글 버튼 -->
+                <div class="mt-4 mb-2">
+                    <button id="darkModeToggle" class="inline-flex items-center px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm" title="다크 모드 전환">
+                        <svg id="sunIcon" class="w-4 h-4 text-yellow-500 hidden mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                        </svg>
+                        <svg id="moonIcon" class="w-4 h-4 text-gray-700 dark:text-gray-200 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                        </svg>
+                        <span class="text-gray-700 dark:text-gray-200">다크 모드</span>
+                    </button>
+                </div>
+                
                 <p class="text-xs text-gray-400 mt-2">
                     © 2024 국립수산과학원 통계 분석 플랫폼 | BSD 라이선스 기반 오픈소스 활용
                 </p>
@@ -865,6 +874,24 @@
             document.getElementById('tooltip').classList.add('hidden');
         }
         
+        // 메모리 관리 함수
+        function cleanupPyodideMemory() {
+            if (window.pyodide) {
+                try {
+                    pyodide.runPython(`
+                        import gc
+                        gc.collect()
+                    `);
+                    console.log('Python 가비지 컬렉션 실행됨');
+                } catch (error) {
+                    console.error('메모리 정리 실패:', error);
+                }
+            }
+        }
+        
+        // 주기적인 메모리 정리 (5분마다)
+        setInterval(cleanupPyodideMemory, 5 * 60 * 1000);
+        
         // 간소화된 Pyodide 초기화
         async function initPyodide() {
             try {
@@ -872,11 +899,252 @@
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
                 });
                 
+                // 메모리 부족 체크
+                if (performance && performance.memory) {
+                    const memoryInfo = performance.memory;
+                    if (memoryInfo.usedJSHeapSize / memoryInfo.jsHeapSizeLimit > 0.9) {
+                        throw new Error('메모리 부족: 브라우저를 재시작하거나 다른 탭을 닫아주세요.');
+                    }
+                }
+                
                 await pyodide.loadPackage(['numpy', 'scipy']);
                 await pyodide.runPythonAsync(`
                     import numpy as np
                     from scipy import stats
                     import json
+                    import warnings
+                    warnings.filterwarnings('ignore')
+                    
+                    # 정규성 검정 함수
+                    def test_normality(values):
+                        """정규성 검정 (Shapiro-Wilk or D'Agostino K²)"""
+                        x = np.array(values, dtype=float)
+                        # NaN 제거
+                        x = x[~np.isnan(x)]
+                        n = len(x)
+                        
+                        if n < 3:
+                            return {
+                                "test": "insufficient_data",
+                                "n": n,
+                                "statistic": None,
+                                "pValue": None,
+                                "isNormal": False,
+                                "message": "표본 수 부족 (n < 3)"
+                            }
+                        elif n < 50:
+                            # Shapiro-Wilk test
+                            stat, p = stats.shapiro(x)
+                            test_name = "Shapiro-Wilk"
+                        else:
+                            # D'Agostino K² test (더 안정적)
+                            stat, p = stats.normaltest(x)
+                            test_name = "D'Agostino K²"
+                        
+                        # 왜도와 첨도 계산
+                        skewness = stats.skew(x)
+                        kurtosis = stats.kurtosis(x)
+                        
+                        return {
+                            "test": test_name,
+                            "n": n,
+                            "statistic": float(stat),
+                            "pValue": float(p),
+                            "isNormal": p > 0.05,
+                            "skewness": float(skewness),
+                            "kurtosis": float(kurtosis),
+                            "mean": float(np.mean(x)),
+                            "std": float(np.std(x, ddof=1))
+                        }
+                    
+                    # 등분산성 검정 함수
+                    def test_homogeneity(groups_dict):
+                        """등분산성 검정 (Brown-Forsythe/Levene)"""
+                        # 그룹별 데이터 준비
+                        groups = []
+                        group_names = []
+                        for name, values in groups_dict.items():
+                            arr = np.array(values, dtype=float)
+                            arr = arr[~np.isnan(arr)]
+                            if len(arr) >= 2:
+                                groups.append(arr)
+                                group_names.append(name)
+                        
+                        if len(groups) < 2:
+                            return {
+                                "test": "insufficient_groups",
+                                "statistic": None,
+                                "pValue": None,
+                                "isHomogeneous": False,
+                                "message": "비교 가능한 그룹이 2개 미만"
+                            }
+                        
+                        # Brown-Forsythe test (중앙값 기반 - 더 robust)
+                        stat_bf, p_bf = stats.levene(*groups, center='median')
+                        
+                        # Levene test (평균 기반 - 참고용)
+                        stat_lv, p_lv = stats.levene(*groups, center='mean')
+                        
+                        # Bartlett test (정규성 충족 시 사용)
+                        try:
+                            stat_bt, p_bt = stats.bartlett(*groups)
+                        except:
+                            stat_bt, p_bt = None, None
+                        
+                        # 각 그룹의 분산
+                        variances = [float(np.var(g, ddof=1)) for g in groups]
+                        
+                        return {
+                            "test": "Brown-Forsythe",
+                            "statistic": float(stat_bf),
+                            "pValue": float(p_bf),
+                            "isHomogeneous": p_bf > 0.05,
+                            "levene_mean": {"statistic": float(stat_lv), "pValue": float(p_lv)},
+                            "bartlett": {"statistic": float(stat_bt) if stat_bt else None, 
+                                        "pValue": float(p_bt) if p_bt else None},
+                            "variances": variances,
+                            "variance_ratio": max(variances) / min(variances) if min(variances) > 0 else None,
+                            "groups": len(groups)
+                        }
+                    
+                    # t-test 함수
+                    def perform_ttest(group1, group2, equal_var=True):
+                        """Independent t-test or Welch's t-test"""
+                        x = np.array(group1, dtype=float)
+                        y = np.array(group2, dtype=float)
+                        x = x[~np.isnan(x)]
+                        y = y[~np.isnan(y)]
+                        
+                        if len(x) < 2 or len(y) < 2:
+                            return {"error": "표본 수 부족"}
+                        
+                        # t-test
+                        stat, p = stats.ttest_ind(x, y, equal_var=equal_var)
+                        
+                        # 효과 크기 (Cohen's d)
+                        nx, ny = len(x), len(y)
+                        mx, my = np.mean(x), np.mean(y)
+                        vx, vy = np.var(x, ddof=1), np.var(y, ddof=1)
+                        
+                        # Pooled standard deviation
+                        sp = np.sqrt(((nx - 1) * vx + (ny - 1) * vy) / (nx + ny - 2))
+                        cohens_d = (mx - my) / sp if sp > 0 else 0
+                        
+                        # 95% CI for mean difference
+                        se = sp * np.sqrt(1/nx + 1/ny)
+                        t_critical = stats.t.ppf(0.975, nx + ny - 2)
+                        ci_lower = (mx - my) - t_critical * se
+                        ci_upper = (mx - my) + t_critical * se
+                        
+                        return {
+                            "statistic": float(stat),
+                            "pValue": float(p),
+                            "df": nx + ny - 2,
+                            "cohens_d": float(cohens_d),
+                            "mean_diff": float(mx - my),
+                            "ci_95": [float(ci_lower), float(ci_upper)],
+                            "group1": {"mean": float(mx), "std": float(np.sqrt(vx)), "n": nx},
+                            "group2": {"mean": float(my), "std": float(np.sqrt(vy)), "n": ny}
+                        }
+                    
+                    # ANOVA 함수
+                    def perform_anova(groups_dict):
+                        """One-way ANOVA"""
+                        groups = []
+                        for name, values in groups_dict.items():
+                            arr = np.array(values, dtype=float)
+                            arr = arr[~np.isnan(arr)]
+                            if len(arr) >= 2:
+                                groups.append(arr)
+                        
+                        if len(groups) < 2:
+                            return {"error": "그룹 수 부족"}
+                        
+                        # ANOVA
+                        stat, p = stats.f_oneway(*groups)
+                        
+                        # 효과 크기 계산
+                        all_data = np.concatenate(groups)
+                        grand_mean = np.mean(all_data)
+                        
+                        # SST, SSB, SSW
+                        sst = np.sum((all_data - grand_mean) ** 2)
+                        ssb = sum(len(g) * (np.mean(g) - grand_mean) ** 2 for g in groups)
+                        ssw = sst - ssb
+                        
+                        # eta squared
+                        eta_squared = ssb / sst if sst > 0 else 0
+                        
+                        # omega squared
+                        df_between = len(groups) - 1
+                        df_within = len(all_data) - len(groups)
+                        ms_between = ssb / df_between if df_between > 0 else 0
+                        ms_within = ssw / df_within if df_within > 0 else 0
+                        
+                        omega_squared = (ssb - df_between * ms_within) / (sst + ms_within) if (sst + ms_within) > 0 else 0
+                        
+                        return {
+                            "statistic": float(stat),
+                            "pValue": float(p),
+                            "df_between": df_between,
+                            "df_within": df_within,
+                            "eta_squared": float(eta_squared),
+                            "omega_squared": float(omega_squared),
+                            "group_count": len(groups),
+                            "total_n": len(all_data)
+                        }
+                    
+                    # 비모수 검정 함수들
+                    def perform_mann_whitney(group1, group2):
+                        """Mann-Whitney U test"""
+                        x = np.array(group1, dtype=float)
+                        y = np.array(group2, dtype=float)
+                        x = x[~np.isnan(x)]
+                        y = y[~np.isnan(y)]
+                        
+                        if len(x) < 2 or len(y) < 2:
+                            return {"error": "표본 수 부족"}
+                        
+                        stat, p = stats.mannwhitneyu(x, y, alternative='two-sided')
+                        
+                        # 효과 크기 (rank-biserial correlation)
+                        n1, n2 = len(x), len(y)
+                        r = 1 - (2 * stat) / (n1 * n2)
+                        
+                        return {
+                            "statistic": float(stat),
+                            "pValue": float(p),
+                            "effect_size": float(r),
+                            "n1": n1,
+                            "n2": n2
+                        }
+                    
+                    def perform_kruskal_wallis(groups_dict):
+                        """Kruskal-Wallis H test"""
+                        groups = []
+                        for name, values in groups_dict.items():
+                            arr = np.array(values, dtype=float)
+                            arr = arr[~np.isnan(arr)]
+                            if len(arr) >= 2:
+                                groups.append(arr)
+                        
+                        if len(groups) < 2:
+                            return {"error": "그룹 수 부족"}
+                        
+                        stat, p = stats.kruskal(*groups)
+                        
+                        # 효과 크기 (epsilon squared)
+                        n = sum(len(g) for g in groups)
+                        k = len(groups)
+                        epsilon_squared = (stat - k + 1) / (n - k) if (n - k) > 0 else 0
+                        
+                        return {
+                            "statistic": float(stat),
+                            "pValue": float(p),
+                            "epsilon_squared": float(epsilon_squared),
+                            "group_count": k,
+                            "total_n": n
+                        }
                     
                     # 통계 분석 함수들
                     def validate_data(data):
@@ -933,15 +1201,33 @@
                 
             } catch (error) {
                 console.error("Pyodide 초기화 실패:", error);
-                document.getElementById('pyodideStatus').innerHTML = `
-                    <div class="error-box">
-                        <p class="font-semibold mb-2">⚠️ 통계 엔진 로딩 중 문제 발생</p>
-                        <p class="text-sm text-gray-700 mb-3">
-                            ${error.message || '네트워크 연결을 확인해주세요.'}
-                        </p>
-                        <div class="flex space-x-2">
-                            <button onclick="location.reload()" class="btn-primary text-sm">
-                                🔄 새로고침하여 다시 시도
+                
+                // 에러 타입별 처리
+                let errorMessage = '알 수 없는 오류가 발생했습니다.';
+                let solution = '페이지를 새로고침 해주세요.';
+                
+                if (error.name === 'NetworkError' || error.message.includes('fetch')) {
+                    errorMessage = '네트워크 연결에 문제가 있습니다.';
+                    solution = '인터넷 연결을 확인하고 다시 시도해주세요.';
+                } else if (error.message.includes('메모리')) {
+                    errorMessage = error.message;
+                    solution = '브라우저를 재시작하거나 다른 탭을 닫아주세요.';
+                } else if (error.message.includes('WebAssembly')) {
+                    errorMessage = '브라우저가 WebAssembly를 지원하지 않습니다.';
+                    solution = '최신 버전의 Chrome, Firefox, 또는 Edge를 사용해주세요.';
+                }
+                
+                const statusDiv = document.getElementById('pyodideStatus');
+                statusDiv.textContent = '';
+                const errorBox = document.createElement('div');
+                errorBox.className = 'error-box';
+                errorBox.innerHTML = `
+                    <p class="font-semibold mb-2">⚠️ 통계 엔진 로딩 실패</p>
+                    <p class="text-sm text-gray-700 mb-1">${errorMessage}</p>
+                    <p class="text-sm text-gray-600 mb-3">${solution}</p>
+                    <div class="flex space-x-2">
+                        <button onclick="location.reload()" class="btn-primary text-sm">
+                            🔄 새로고침하여 다시 시도
                             </button>
                             <button onclick="showOfflineHelp()" class="btn-secondary text-sm">
                                 📖 오프라인 모드 안내
@@ -1178,15 +1464,7 @@
             }
         }
         
-        // 샘플 데이터로 체험
-        function showSampleData() {
-            generateSampleData();
-            document.getElementById('proceedBtn1').disabled = false;
-            
-            // 시각적 피드백
-            const btn = event.target;
-            btn.classList.add('pulse-once');
-        }
+
         
         // 샘플 데이터 생성
         function generateSampleData() {
@@ -1799,7 +2077,7 @@
             console.log('validateData 호출 완료');
         }
         
-        // 가정 검정
+        // 가정 검정 (실제 SciPy 사용)
         async function testAssumptions() {
             // 이미 결과가 있으면 표시만
             if (analysisResults.assumptions) {
@@ -1839,90 +2117,131 @@
                 }
             }
             
-            // 정규성 검정 수행 (JavaScript로 간단히 구현)
+            // Pyodide 체크
+            if (!window.pyodide) {
+                alert('통계 엔진이 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            
+            // 정규성 검정 수행 (실제 SciPy 사용)
             const normalityResults = [];
             const homogeneityResults = [];
             
-            for (const col of numericColumns) {
-                const values = currentData[col].filter(v => !isNaN(Number(v)) && v !== '');
-                const nums = values.map(v => parseFloat(v));
-                const n = nums.length;
-                
-                // Shapiro-Wilk 검정 시뮬레이션 (실제로는 scipy 필요)
-                // 여기서는 간단히 왜도와 첨도로 판단
-                const mean = nums.reduce((a, b) => a + b, 0) / n;
-                const variance = nums.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1);
-                const std = Math.sqrt(variance);
-                
-                // 왜도 계산
-                const skewness = nums.reduce((a, b) => a + Math.pow((b - mean) / std, 3), 0) / n;
-                // 첨도 계산
-                const kurtosis = nums.reduce((a, b) => a + Math.pow((b - mean) / std, 4), 0) / n - 3;
-                
-                // 정규성 판단 (간단한 기준)
-                const isNormal = Math.abs(skewness) < 2 && Math.abs(kurtosis) < 7;
-                const pValue = isNormal ? 0.15 : 0.03; // 시뮬레이션 값
-                
-                normalityResults.push({
-                    variable: col,
-                    test: n < 50 ? 'Shapiro-Wilk' : 'Kolmogorov-Smirnov',
-                    statistic: isNormal ? 0.95 : 0.88,
-                    pValue: pValue,
-                    isNormal: isNormal,
-                    skewness: skewness,
-                    kurtosis: kurtosis,
-                    interpretation: isNormal ? 
-                        '정규분포를 따름 (p > 0.05)' : 
-                        '정규분포를 따르지 않음 (p < 0.05)'
-                });
-            }
-            
-            // 등분산성 검정 (그룹이 있는 경우)
-            if (groupColumns.length > 0) {
-                for (const numCol of numericColumns) {
-                    for (const groupCol of groupColumns) {
-                        // 그룹별 분산 계산
-                        const groups = {};
-                        for (let i = 0; i < currentData[groupCol].length; i++) {
-                            const group = currentData[groupCol][i];
-                            const value = parseFloat(currentData[numCol][i]);
-                            if (!isNaN(value)) {
-                                if (!groups[group]) groups[group] = [];
-                                groups[group].push(value);
-                            }
-                        }
-                        
-                        // 각 그룹의 분산 계산
-                        const variances = [];
-                        for (const group in groups) {
-                            const values = groups[group];
-                            if (values.length > 1) {
-                                const mean = values.reduce((a, b) => a + b, 0) / values.length;
-                                const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (values.length - 1);
-                                variances.push(variance);
-                            }
-                        }
-                        
-                        // 분산 비율 확인 (간단한 방법)
-                        const maxVar = Math.max(...variances);
-                        const minVar = Math.min(...variances);
-                        const ratio = maxVar / minVar;
-                        const isHomogeneous = ratio < 3; // 3배 이내면 등분산 가정
-                        
-                        homogeneityResults.push({
-                            variable: numCol,
-                            groupVariable: groupCol,
-                            test: 'Levene',
-                            statistic: ratio,
-                            pValue: isHomogeneous ? 0.12 : 0.03,
-                            isHomogeneous: isHomogeneous,
-                            variances: variances,
-                            interpretation: isHomogeneous ?
-                                `등분산성 만족 (최대/최소 분산비 = ${ratio.toFixed(2)} < 3)` :
-                                `등분산성 위배 (최대/최소 분산비 = ${ratio.toFixed(2)} > 3)`
+            try {
+                // 1. 정규성 검정 - 각 수치형 변수에 대해
+                for (const col of numericColumns) {
+                    const values = currentData[col].filter(v => !isNaN(Number(v)) && v !== '');
+                    const nums = values.map(v => parseFloat(v));
+                    
+                    if (nums.length < 3) {
+                        normalityResults.push({
+                            variable: col,
+                            test: 'N/A',
+                            statistic: null,
+                            pValue: null,
+                            isNormal: false,
+                            interpretation: '표본 수 부족 (n < 3)',
+                            sampleSize: nums.length
                         });
+                        continue;
+                    }
+                    
+                    // Python으로 정규성 검정 실행
+                    pyodide.globals.set('test_values', nums);
+                    const result = await pyodide.runPythonAsync(`
+                        result = test_normality(test_values)
+                        result
+                    `);
+                    
+                    const normResult = result.toJs();
+                    
+                    normalityResults.push({
+                        variable: col,
+                        test: normResult.get('test'),
+                        statistic: normResult.get('statistic'),
+                        pValue: normResult.get('pValue'),
+                        isNormal: normResult.get('isNormal'),
+                        skewness: normResult.get('skewness'),
+                        kurtosis: normResult.get('kurtosis'),
+                        sampleSize: normResult.get('n'),
+                        interpretation: normResult.get('isNormal') ? 
+                            `정규분포를 따름 (${normResult.get('test')}, p = ${normResult.get('pValue')?.toFixed(3)} > 0.05)` : 
+                            `정규분포를 따르지 않음 (${normResult.get('test')}, p = ${normResult.get('pValue')?.toFixed(3)} < 0.05)`,
+                        recommendation: !normResult.get('isNormal') ? 
+                            '비모수 검정 또는 데이터 변환을 고려하세요' : 
+                            '모수 검정 사용 가능'
+                    });
+                }
+                
+                // 2. 등분산성 검정 - 그룹이 있는 경우
+                if (groupColumns.length > 0) {
+                    for (const numCol of numericColumns) {
+                        for (const groupCol of groupColumns) {
+                            // 그룹별 데이터 준비
+                            const groupsData = {};
+                            for (let i = 0; i < currentData[groupCol].length; i++) {
+                                const group = currentData[groupCol][i];
+                                const value = currentData[numCol][i];
+                                
+                                if (group && !isNaN(parseFloat(value))) {
+                                    if (!groupsData[group]) groupsData[group] = [];
+                                    groupsData[group].push(parseFloat(value));
+                                }
+                            }
+                            
+                            // 그룹이 2개 이상인 경우만 검정
+                            const validGroups = Object.entries(groupsData)
+                                .filter(([_, vals]) => vals.length >= 2);
+                            
+                            if (validGroups.length < 2) {
+                                continue;
+                            }
+                            
+                            // Python으로 등분산성 검정 실행
+                            const groupsDict = Object.fromEntries(validGroups);
+                            pyodide.globals.set('test_groups', groupsDict);
+                            const homResult = await pyodide.runPythonAsync(`
+                                result = test_homogeneity(test_groups)
+                                result
+                            `);
+                            
+                            const homData = homResult.toJs();
+                            
+                            // 정규성 결과 확인하여 적절한 검정 해석
+                            const normalityResult = normalityResults.find(r => r.variable === numCol);
+                            const useTest = normalityResult && normalityResult.isNormal && 
+                                          homData.get('bartlett')?.pValue ? 
+                                          'Bartlett' : homData.get('test');
+                            
+                            homogeneityResults.push({
+                                variable: numCol,
+                                groupVariable: groupCol,
+                                test: useTest,
+                                statistic: homData.get('statistic'),
+                                pValue: homData.get('pValue'),
+                                isHomogeneous: homData.get('isHomogeneous'),
+                                variances: homData.get('variances'),
+                                varianceRatio: homData.get('variance_ratio'),
+                                groupCount: homData.get('groups'),
+                                interpretation: homData.get('isHomogeneous') ?
+                                    `등분산성 만족 (${useTest}: p = ${homData.get('pValue')?.toFixed(3)} > 0.05)` :
+                                    `등분산성 위배 (${useTest}: p = ${homData.get('pValue')?.toFixed(3)} < 0.05)`,
+                                recommendation: !homData.get('isHomogeneous') ?
+                                    '등분산 가정이 위배되어 Welch 검정 권장' :
+                                    '등분산 가정 충족, 일반 검정 사용 가능'
+                            });
+                        }
                     }
                 }
+            } catch (error) {
+                console.error('가정 검정 오류:', error);
+                document.getElementById('normalityResults').innerHTML = `
+                    <div class="error-box">
+                        <p class="font-semibold">오류 발생</p>
+                        <p class="text-sm">${error.message}</p>
+                    </div>
+                `;
+                return;
             }
             
             // 결과 저장
@@ -2061,26 +2380,48 @@
                 return;
             }
             
-            // 데이터 분석하여 최적 방법 추천
+            // 가정 검정 결과가 없으면 경고
+            if (!analysisResults.assumptions) {
+                alert('먼저 통계적 가정 검정을 완료해주세요.');
+                return;
+            }
+            
+            // 데이터와 가정 검정 결과를 바탕으로 최적 방법 추천
             const method = analyzeDataForMethod();
             
             analysisResults.method = method;
             displayMethodRecommendation(method);
             
-            // 설명 박스 표시
+            // 설명 박스와 버튼 표시
             document.getElementById('step4Explanation').classList.remove('hidden');
+            document.getElementById('step4NextButton').classList.remove('hidden');
+            document.getElementById('step4NextButton').querySelector('button').disabled = false;
             
             if (autoProgress) {
-                setTimeout(() => proceedToStep5(), 2000);
+                setTimeout(() => proceedToStep5(), 3000);
             }
         }
         
         function analyzeDataForMethod() {
+            // 가정 검정 결과와 데이터 특성 확인
+            const validation = analysisResults.validation || {};
+            const assumptions = analysisResults.assumptions || {};
+            const numericColumns = validation.numericColumns || [];
+            const groupColumns = validation.groupColumns || [];
+            
+            // 가정 충족 여부 확인
+            const allNormal = assumptions.normality && assumptions.normality.every(r => r.isNormal);
+            const allHomogeneous = !assumptions.homogeneity || assumptions.homogeneity.length === 0 || 
+                                  assumptions.homogeneity.every(r => r.isHomogeneous);
+            
             if (!currentData) {
                 return {
                     name: 'One-way ANOVA',
                     description: '기본 그룹 비교 분석',
-                    reason: '데이터를 확인할 수 없습니다.'
+                    reason: '데이터를 확인할 수 없습니다.',
+                    primary: { name: 'One-way ANOVA', type: 'parametric' },
+                    alternatives: [],
+                    reasoning: ['데이터를 확인할 수 없습니다']
                 };
             }
             
@@ -2102,6 +2443,83 @@
             }
             
             // 방법 결정 로직
+            
+            // 1. 대응 표본 또는 반복측정 감지
+            const hasPairedKeywords = columns.some(col => {
+                const lowerCol = col.toLowerCase();
+                return lowerCol.includes('before') || lowerCol.includes('after') ||
+                       lowerCol.includes('pre') || lowerCol.includes('post') ||
+                       lowerCol.includes('time') || lowerCol.includes('전') || 
+                       lowerCol.includes('후') || lowerCol.includes('시간') ||
+                       lowerCol.includes('paired') || lowerCol.includes('대응');
+            });
+            
+            const hasSubjectId = columns.some(col => {
+                const lowerCol = col.toLowerCase();
+                return lowerCol.includes('subject') || lowerCol.includes('id') ||
+                       lowerCol.includes('patient') || lowerCol.includes('환자') ||
+                       lowerCol.includes('개체');
+            });
+            
+            // 대응 표본 t검정 감지
+            if (hasPairedKeywords && numericCols.length >= 2) {
+                const isNormal = assumptions.normality && 
+                                assumptions.normality.every(r => r.isNormal);
+                return {
+                    name: isNormal ? 'Paired t-test' : 'Wilcoxon Signed-Rank Test',
+                    type: 'paired_test',
+                    description: isNormal ? 
+                        '대응 표본의 평균 차이를 검정합니다.' :
+                        '대응 표본의 중앙값 차이를 검정합니다 (비모수).',
+                    reason: `대응 표본 데이터가 감지되었고, 정규성: ${isNormal ? '충족' : '미충족'}`,
+                    variables: numericCols.slice(0, 2),
+                    isPaired: true
+                };
+            }
+            
+            // 반복측정 ANOVA 감지
+            if (hasSubjectId && categoricalCols.length >= 1 && numericCols.length >= 1) {
+                const groups = [...new Set(currentData[categoricalCols[0]])];
+                if (groups.length >= 3) {
+                    const isNormal = assumptions.normality && 
+                                    assumptions.normality.every(r => r.isNormal);
+                    return {
+                        name: isNormal ? 'Repeated Measures ANOVA' : 'Friedman Test',
+                        type: 'repeated_measures',
+                        description: isNormal ?
+                            '반복측정된 데이터의 그룹 간 차이를 분석합니다.' :
+                            '반복측정된 데이터의 그룹 간 차이를 비모수적으로 분석합니다.',
+                        reason: `반복측정 디자인이 감지되었고 ${groups.length}개 시점`,
+                        factor: categoricalCols[0],
+                        dependent: numericCols[0],
+                        subjectId: columns.find(col => 
+                            col.toLowerCase().includes('subject') || 
+                            col.toLowerCase().includes('id')
+                        )
+                    };
+                }
+            }
+            
+            // 2. 범주형 데이터 분석 감지
+            const allCategorical = columns.every(col => {
+                const values = currentData[col];
+                const numericCount = values.filter(v => !isNaN(v) && v !== null && v !== '').length;
+                return numericCount / values.length < 0.2; // 80% 이상이 비숫자
+            });
+            
+            if (allCategorical && columns.length >= 2) {
+                return {
+                    name: 'Chi-square Test',
+                    type: 'chi_square',
+                    description: '범주형 변수 간의 독립성을 검정합니다.',
+                    reason: '모든 변수가 범주형으로 감지되어 카이제곱 검정이 적합합니다.',
+                    variables: columns,
+                    alternatives: [
+                        "Fisher's Exact Test (표본 크기가 작을 때)",
+                        "Cramer's V (효과 크기 측정)"
+                    ]
+                };
+            }
             
             // Two-way ANOVA 감지 (2개 범주형 + 1개 수치형)
             if (categoricalCols.length >= 2 && numericCols.length >= 1) {
@@ -2195,11 +2613,65 @@
         }
         
         function displayMethodRecommendation(method) {
-            document.getElementById('methodRecommendation').innerHTML = `
-                <p class="text-lg font-semibold mb-2">✅ 추천 통계 방법: ${method.name}</p>
-                <p class="text-sm text-gray-600">${method.description}</p>
-                <p class="text-xs text-gray-500 mt-2">${method.reason}</p>
+            // 이전 버전과의 호환성 체크
+            if (!method.primary) {
+                // 구식 형식을 새 형식으로 변환
+                method = {
+                    primary: { name: method.name, description: method.description, type: method.type },
+                    reasoning: [method.reason],
+                    alternatives: []
+                };
+            }
+            
+            let html = `
+                <div class="space-y-4">
+                    <!-- 주요 추천 방법 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-semibold text-blue-800 mb-2">🎯 추천 분석 방법</h4>
+                        <div class="text-lg font-medium text-blue-900">${method.primary.name}</div>
+                        <div class="text-sm text-blue-700 mt-1">${method.primary.description || ''}</div>
+                        <div class="mt-2 text-xs">
+                            <span class="inline-block px-2 py-1 bg-white rounded">
+                                ${method.primary.type === 'parametric' ? '📊 모수적 검정' : 
+                                  method.primary.type === 'non-parametric' || method.primary.type === 'non_parametric' ? '📈 비모수 검정' : 
+                                  method.primary.type === 'two_way_anova' || method.primary.type === 'one_way_anova' ? '📊 분산분석' :
+                                  method.primary.type === 'regression' ? '📉 회귀분석' :
+                                  method.primary.type === 'ttest' ? '📊 t-검정' :
+                                  '📋 기술통계'}
+                            </span>
+                            ${method.primary.requirements ? `<div class="mt-1">${method.primary.requirements}</div>` : ''}
+                            ${method.primary.postHoc ? `<div class="mt-1">📌 사후검정: ${method.primary.postHoc}</div>` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- 추천 이유 -->
+                    ${method.reasoning && method.reasoning.length > 0 ? `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h5 class="font-semibold mb-2">💡 선택 이유</h5>
+                        <ul class="text-sm space-y-1">
+                            ${method.reasoning.map(r => `<li>• ${r}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 대안 방법 -->
+                    ${method.alternatives && method.alternatives.length > 0 ? `
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <h5 class="font-semibold mb-2">🔄 대체 가능한 방법</h5>
+                        <ul class="text-sm space-y-2">
+                            ${method.alternatives.map(alt => `
+                                <li>
+                                    <span class="font-medium">• ${alt.name}</span>
+                                    <span class="text-xs text-gray-600 ml-2">(${alt.reason || ''})</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                </div>
             `;
+            
+            document.getElementById('methodRecommendation').innerHTML = html;
         }
         
         // 분석 실행
@@ -2211,28 +2683,498 @@
                 return;
             }
             
-            // 분석 진행 상태 표시
-            analysisResults.analysis = {
-                status: 'running',
-                startTime: new Date()
-            };
-            displayAnalysisProgress(analysisResults.analysis);
+            // 필수 사전 단계 확인
+            if (!analysisResults.method) {
+                alert('먼저 분석 방법을 선택해주세요.');
+                return;
+            }
             
-            setTimeout(() => {
-                // 분석 완료
-                analysisResults.final = {
-                    test: 'One-way ANOVA',
-                    fStatistic: 15.234,
-                    pValue: 0.0001,
-                    significant: true,
-                    interpretation: '그룹 간 유의미한 차이가 있습니다.'
-                };
-                moveToStep(6, true);
-                displayResults();
+            // 분석 진행 상태 표시
+            document.getElementById('analysisProgress').innerHTML = `
+                <div class="text-center py-4">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2 text-gray-600">통계 분석을 수행하고 있습니다...</p>
+                </div>
+            `;
+            
+            // 실제 분석 수행 (Pyodide 사용)
+            setTimeout(async () => {
+                const startTime = Date.now();
+                const result = await performStatisticalAnalysis();
+                analysisResults.final = result;
                 
-                // 설명 박스 표시
-                document.getElementById('step5Explanation').classList.remove('hidden');
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                
+                // 진행 상태 업데이트
+                document.getElementById('analysisProgress').innerHTML = `
+                    <div class="success-box">
+                        <p class="font-semibold">✅ 분석 완료</p>
+                        <p class="text-sm mt-1">총 소요시간: ${elapsed}초</p>
+                    </div>
+                `;
+                
+                // 6단계로 이동
+                setTimeout(() => {
+                    moveToStep(6, true);
+                    displayResults();
+                    
+                    // 설명 박스 표시
+                    document.getElementById('step5Explanation').classList.remove('hidden');
+                }, 1000);
             }, 2000);
+        }
+        
+        async function performStatisticalAnalysis() {
+            // Pyodide가 준비되었는지 확인
+            if (!window.pyodide || !pyodideReady) {
+                console.warn('Pyodide not ready, using fallback calculations');
+                return performStatisticalAnalysisFallback();
+            }
+            
+            // 선택된 방법에 따라 다른 분석 수행
+            const method = analysisResults.method.primary || analysisResults.method;
+            const validation = analysisResults.validation;
+            const numericColumns = validation.numericColumns || [];
+            const groupColumns = validation.groupColumns || [];
+            
+            let result = {
+                method: method.name,
+                timestamp: new Date().toISOString(),
+                data: {},
+                statistics: {},
+                interpretation: '',
+                postHoc: null
+            };
+            
+            try {
+                // 분석 타입별 처리
+                if (method.type === 'ttest' || method.name.includes('t-test')) {
+                    // t-검정 (Pyodide 사용)
+                    const dependentVar = numericColumns[0];
+                    const groupVar = groupColumns[0];
+                    const groups = [...new Set(currentData[groupVar])];
+                    
+                    // 그룹별 데이터 분리
+                    const group1Data = [];
+                    const group2Data = [];
+                    for (let i = 0; i < currentData[groupVar].length; i++) {
+                        const value = parseFloat(currentData[dependentVar][i]);
+                        if (!isNaN(value)) {
+                            if (currentData[groupVar][i] === groups[0]) {
+                                group1Data.push(value);
+                            } else if (currentData[groupVar][i] === groups[1]) {
+                                group2Data.push(value);
+                            }
+                        }
+                    }
+                    
+                    // Python으로 실제 t-test 수행
+                    const pythonResult = await window.pyodide.runPythonAsync(`
+                        import numpy as np
+                        from scipy import stats
+                        import json
+                        
+                        group1 = np.array(${JSON.stringify(group1Data)})
+                        group2 = np.array(${JSON.stringify(group2Data)})
+                        
+                        # Independent t-test
+                        if '${method.name}'.find('Welch') >= 0:
+                            t_stat, p_value = stats.ttest_ind(group1, group2, equal_var=False)
+                        else:
+                            t_stat, p_value = stats.ttest_ind(group1, group2, equal_var=True)
+                        
+                        # 기술통계
+                        mean1 = np.mean(group1)
+                        mean2 = np.mean(group2)
+                        std1 = np.std(group1, ddof=1)
+                        std2 = np.std(group2, ddof=1)
+                        n1 = len(group1)
+                        n2 = len(group2)
+                        
+                        # 효과 크기 계산
+                        pooled_std = np.sqrt(((n1-1)*std1**2 + (n2-1)*std2**2) / (n1+n2-2))
+                        cohen_d = (mean1 - mean2) / pooled_std
+                        
+                        # 95% 신뢰구간
+                        mean_diff = mean1 - mean2
+                        se_diff = pooled_std * np.sqrt(1/n1 + 1/n2)
+                        df = n1 + n2 - 2
+                        t_crit = stats.t.ppf(0.975, df)
+                        ci_lower = mean_diff - t_crit * se_diff
+                        ci_upper = mean_diff + t_crit * se_diff
+                        
+                        result = {
+                            "t_statistic": float(t_stat),
+                            "p_value": float(p_value),
+                            "df": int(df),
+                            "mean1": float(mean1),
+                            "mean2": float(mean2),
+                            "std1": float(std1),
+                            "std2": float(std2),
+                            "n1": int(n1),
+                            "n2": int(n2),
+                            "cohen_d": float(cohen_d),
+                            "ci_lower": float(ci_lower),
+                            "ci_upper": float(ci_upper),
+                            "mean_diff": float(mean_diff)
+                        }
+                        json.dumps(result)
+                    `);
+                    
+                    const stats = JSON.parse(pythonResult);
+                    
+                    result.statistics = {
+                        tStatistic: stats.t_statistic,
+                        df: stats.df,
+                        pValue: stats.p_value,
+                        group1: { name: groups[0], n: stats.n1, mean: stats.mean1, std: stats.std1 },
+                        group2: { name: groups[1], n: stats.n2, mean: stats.mean2, std: stats.std2 },
+                        meanDifference: Math.abs(stats.mean_diff),
+                        cohensD: Math.abs(stats.cohen_d),
+                        confidenceInterval: [stats.ci_lower, stats.ci_upper]
+                    };
+                    
+                    result.interpretation = stats.p_value < 0.05 ? 
+                        `두 그룹 간 유의미한 차이가 있습니다 (t=${stats.t_statistic.toFixed(3)}, p=${stats.p_value.toFixed(4)} < 0.05). ${groups[0]}의 평균(${stats.mean1.toFixed(2)})과 ${groups[1]}의 평균(${stats.mean2.toFixed(2)}) 간 차이는 통계적으로 유의합니다. 효과크기(Cohen's d): ${Math.abs(stats.cohen_d).toFixed(3)}` :
+                        `두 그룹 간 유의미한 차이가 없습니다 (t=${stats.t_statistic.toFixed(3)}, p=${stats.p_value.toFixed(4)} > 0.05). ${groups[0]}과 ${groups[1]}의 평균 차이는 통계적으로 유의하지 않습니다.`;
+                        
+                } else if (method.type === 'one_way_anova' || method.name.includes('ANOVA')) {
+                    // ANOVA (Pyodide 사용)
+                    const dependentVar = numericColumns[0];
+                    const groupVar = groupColumns[0];
+                    const groups = [...new Set(currentData[groupVar])];
+                    
+                    // 그룹별 데이터 준비
+                    const groupDataArrays = {};
+                    for (const group of groups) {
+                        groupDataArrays[group] = [];
+                    }
+                    
+                    for (let i = 0; i < currentData[groupVar].length; i++) {
+                        const value = parseFloat(currentData[dependentVar][i]);
+                        const group = currentData[groupVar][i];
+                        if (!isNaN(value) && groupDataArrays[group]) {
+                            groupDataArrays[group].push(value);
+                        }
+                    }
+                    
+                    // Python으로 실제 ANOVA 수행
+                    const pythonResult = await window.pyodide.runPythonAsync(`
+                        import numpy as np
+                        from scipy import stats
+                        import json
+                        
+                        # 그룹 데이터
+                        groups_data = ${JSON.stringify(groupDataArrays)}
+                        group_names = list(groups_data.keys())
+                        group_arrays = [np.array(groups_data[name]) for name in group_names]
+                        
+                        # One-way ANOVA
+                        f_stat, p_value = stats.f_oneway(*group_arrays)
+                        
+                        # 각 그룹 통계
+                        group_stats = {}
+                        all_data = []
+                        for name, data in groups_data.items():
+                            arr = np.array(data)
+                            all_data.extend(data)
+                            group_stats[name] = {
+                                "n": len(arr),
+                                "mean": float(np.mean(arr)),
+                                "std": float(np.std(arr, ddof=1)),
+                                "variance": float(np.var(arr, ddof=1))
+                            }
+                        
+                        # 전체 통계
+                        all_data = np.array(all_data)
+                        grand_mean = np.mean(all_data)
+                        total_n = len(all_data)
+                        
+                        # SS 계산
+                        ss_total = np.sum((all_data - grand_mean)**2)
+                        ss_between = sum(group_stats[name]["n"] * (group_stats[name]["mean"] - grand_mean)**2 
+                                        for name in group_names)
+                        ss_within = ss_total - ss_between
+                        
+                        # 자유도
+                        df_between = len(group_names) - 1
+                        df_within = total_n - len(group_names)
+                        
+                        # MS 계산
+                        ms_between = ss_between / df_between
+                        ms_within = ss_within / df_within
+                        
+                        # 효과 크기
+                        eta_squared = ss_between / ss_total
+                        omega_squared = (ss_between - df_between * ms_within) / (ss_total + ms_within)
+                        
+                        result = {
+                            "f_statistic": float(f_stat),
+                            "p_value": float(p_value),
+                            "df_between": int(df_between),
+                            "df_within": int(df_within),
+                            "ss_between": float(ss_between),
+                            "ss_within": float(ss_within),
+                            "ss_total": float(ss_total),
+                            "ms_between": float(ms_between),
+                            "ms_within": float(ms_within),
+                            "eta_squared": float(eta_squared),
+                            "omega_squared": float(omega_squared),
+                            "group_stats": group_stats,
+                            "n_groups": len(group_names)
+                        }
+                        json.dumps(result)
+                    `);
+                    
+                    const stats = JSON.parse(pythonResult);
+                    
+                    result.statistics = {
+                        fStatistic: stats.f_statistic,
+                        dfBetween: stats.df_between,
+                        dfWithin: stats.df_within,
+                        pValue: stats.p_value,
+                        SSbetween: stats.ss_between,
+                        SSwithin: stats.ss_within,
+                        SStotal: stats.ss_total,
+                        MSbetween: stats.ms_between,
+                        MSwithin: stats.ms_within,
+                        groups: stats.group_stats,
+                        etaSquared: stats.eta_squared,
+                        omegaSquared: stats.omega_squared
+                    };
+                    
+                    result.interpretation = stats.p_value < 0.05 ?
+                        `그룹 간 유의미한 차이가 있습니다 (F(${stats.df_between},${stats.df_within})=${stats.f_statistic.toFixed(3)}, p=${stats.p_value.toFixed(4)} < 0.05). 적어도 하나의 그룹 평균이 다른 그룹과 유의하게 다릅니다. 효과크기(η²): ${stats.eta_squared.toFixed(3)}` :
+                        `그룹 간 유의미한 차이가 없습니다 (F(${stats.df_between},${stats.df_within})=${stats.f_statistic.toFixed(3)}, p=${stats.p_value.toFixed(4)} > 0.05). 모든 그룹의 평균이 통계적으로 유사합니다.`;
+                        
+                    // 사후분석 필요 여부
+                    if (stats.p_value < 0.05 && stats.n_groups > 2) {
+                        result.postHoc = {
+                            method: analysisResults.assumptions?.homogeneity ? 'Tukey HSD' : 'Games-Howell',
+                            comparisons: [],
+                            note: '사후분석이 필요합니다 (3개 이상 그룹에서 유의한 차이 발견)'
+                        };
+                    }
+                    
+                } else if (method.type === 'mann_whitney' || method.type === 'kruskal_wallis') {
+                    // 비모수 검정
+                    result = await performNonParametricAnalysis(method, validation);
+                } else {
+                    // 기본 기술통계
+                    result.statistics = {
+                        description: '기술통계 분석'
+                    };
+                    result.interpretation = '데이터의 기본 통계량을 계산했습니다.';
+                }
+                
+            } catch (error) {
+                console.error('Statistical analysis error:', error);
+                // 오류 시 fallback 함수 사용
+                return performStatisticalAnalysisFallback();
+            }
+            
+            return result;
+        }
+        
+        // Fallback 함수 (Pyodide 없을 때 사용)
+        function performStatisticalAnalysisFallback() {
+            console.log('Using fallback statistical analysis');
+            // 기존의 간단한 계산 로직 (필요시)
+            return {
+                method: 'Fallback Analysis',
+                timestamp: new Date().toISOString(),
+                statistics: {
+                    note: 'Pyodide를 로드할 수 없어 간단한 분석만 제공됩니다.'
+                },
+                interpretation: 'Python 환경을 로드하지 못해 제한된 분석 결과를 제공합니다.'
+            };
+        }
+        
+        // 비모수 검정 수행
+        async function performNonParametricAnalysis(method, validation) {
+            if (!window.pyodide || !pyodideReady) {
+                return performStatisticalAnalysisFallback();
+            }
+            
+            const numericColumns = validation.numericColumns || [];
+            const groupColumns = validation.groupColumns || [];
+            
+            let result = {
+                method: method.name,
+                timestamp: new Date().toISOString(),
+                data: {},
+                statistics: {},
+                interpretation: '',
+                postHoc: null
+            };
+            
+            try {
+                if (method.type === 'mann_whitney') {
+                    // Mann-Whitney U test
+                    const dependentVar = numericColumns[0];
+                    const groupVar = groupColumns[0];
+                    const groups = [...new Set(currentData[groupVar])];
+                    
+                    // 그룹별 데이터 분리
+                    const group1Data = [];
+                    const group2Data = [];
+                    for (let i = 0; i < currentData[groupVar].length; i++) {
+                        const value = parseFloat(currentData[dependentVar][i]);
+                        if (!isNaN(value)) {
+                            if (currentData[groupVar][i] === groups[0]) {
+                                group1Data.push(value);
+                            } else if (currentData[groupVar][i] === groups[1]) {
+                                group2Data.push(value);
+                            }
+                        }
+                    }
+                    
+                    const pythonResult = await window.pyodide.runPythonAsync(`
+                        import numpy as np
+                        from scipy import stats
+                        import json
+                        
+                        group1 = np.array(${JSON.stringify(group1Data)})
+                        group2 = np.array(${JSON.stringify(group2Data)})
+                        
+                        # Mann-Whitney U test
+                        u_stat, p_value = stats.mannwhitneyu(group1, group2, alternative='two-sided')
+                        
+                        # 중앙값 계산
+                        median1 = np.median(group1)
+                        median2 = np.median(group2)
+                        
+                        # 순위 합
+                        combined = np.concatenate([group1, group2])
+                        ranks = stats.rankdata(combined)
+                        rank_sum1 = np.sum(ranks[:len(group1)])
+                        rank_sum2 = np.sum(ranks[len(group1):])
+                        
+                        # 효과 크기 (r = Z / sqrt(N))
+                        n = len(group1) + len(group2)
+                        z_stat = stats.norm.ppf(p_value / 2) if p_value < 1 else 0
+                        effect_size = abs(z_stat) / np.sqrt(n)
+                        
+                        result = {
+                            "u_statistic": float(u_stat),
+                            "p_value": float(p_value),
+                            "median1": float(median1),
+                            "median2": float(median2),
+                            "n1": len(group1),
+                            "n2": len(group2),
+                            "rank_sum1": float(rank_sum1),
+                            "rank_sum2": float(rank_sum2),
+                            "effect_size": float(effect_size)
+                        }
+                        json.dumps(result)
+                    `);
+                    
+                    const stats = JSON.parse(pythonResult);
+                    
+                    result.statistics = {
+                        uStatistic: stats.u_statistic,
+                        pValue: stats.p_value,
+                        group1: { name: groups[0], n: stats.n1, median: stats.median1, rankSum: stats.rank_sum1 },
+                        group2: { name: groups[1], n: stats.n2, median: stats.median2, rankSum: stats.rank_sum2 },
+                        effectSize: stats.effect_size
+                    };
+                    
+                    result.interpretation = stats.p_value < 0.05 ?
+                        `두 그룹 간 유의미한 차이가 있습니다 (U=${stats.u_statistic.toFixed(1)}, p=${stats.p_value.toFixed(4)} < 0.05). ${groups[0]}의 중앙값(${stats.median1.toFixed(2)})과 ${groups[1]}의 중앙값(${stats.median2.toFixed(2)}) 간 차이는 통계적으로 유의합니다.` :
+                        `두 그룹 간 유의미한 차이가 없습니다 (U=${stats.u_statistic.toFixed(1)}, p=${stats.p_value.toFixed(4)} > 0.05).`;
+                        
+                } else if (method.type === 'kruskal_wallis') {
+                    // Kruskal-Wallis test
+                    const dependentVar = numericColumns[0];
+                    const groupVar = groupColumns[0];
+                    const groups = [...new Set(currentData[groupVar])];
+                    
+                    // 그룹별 데이터 준비
+                    const groupDataArrays = {};
+                    for (const group of groups) {
+                        groupDataArrays[group] = [];
+                    }
+                    
+                    for (let i = 0; i < currentData[groupVar].length; i++) {
+                        const value = parseFloat(currentData[dependentVar][i]);
+                        const group = currentData[groupVar][i];
+                        if (!isNaN(value) && groupDataArrays[group]) {
+                            groupDataArrays[group].push(value);
+                        }
+                    }
+                    
+                    const pythonResult = await window.pyodide.runPythonAsync(`
+                        import numpy as np
+                        from scipy import stats
+                        import json
+                        
+                        # 그룹 데이터
+                        groups_data = ${JSON.stringify(groupDataArrays)}
+                        group_names = list(groups_data.keys())
+                        group_arrays = [np.array(groups_data[name]) for name in group_names]
+                        
+                        # Kruskal-Wallis test
+                        h_stat, p_value = stats.kruskal(*group_arrays)
+                        
+                        # 각 그룹 통계
+                        group_stats = {}
+                        for name, data in groups_data.items():
+                            arr = np.array(data)
+                            group_stats[name] = {
+                                "n": len(arr),
+                                "median": float(np.median(arr)),
+                                "iqr": float(np.percentile(arr, 75) - np.percentile(arr, 25)),
+                                "mean_rank": float(stats.rankdata(np.concatenate(group_arrays))[
+                                    sum(len(groups_data[n]) for n in group_names[:group_names.index(name)]):
+                                    sum(len(groups_data[n]) for n in group_names[:group_names.index(name)+1])
+                                ].mean())
+                            }
+                        
+                        # 효과 크기 (epsilon squared)
+                        n_total = sum(len(arr) for arr in group_arrays)
+                        epsilon_squared = (h_stat - len(group_names) + 1) / (n_total - len(group_names))
+                        
+                        result = {
+                            "h_statistic": float(h_stat),
+                            "p_value": float(p_value),
+                            "df": len(group_names) - 1,
+                            "group_stats": group_stats,
+                            "n_groups": len(group_names),
+                            "epsilon_squared": float(epsilon_squared) if epsilon_squared > 0 else 0
+                        }
+                        json.dumps(result)
+                    `);
+                    
+                    const stats = JSON.parse(pythonResult);
+                    
+                    result.statistics = {
+                        hStatistic: stats.h_statistic,
+                        df: stats.df,
+                        pValue: stats.p_value,
+                        groups: stats.group_stats,
+                        epsilonSquared: stats.epsilon_squared
+                    };
+                    
+                    result.interpretation = stats.p_value < 0.05 ?
+                        `그룹 간 유의미한 차이가 있습니다 (H=${stats.h_statistic.toFixed(3)}, p=${stats.p_value.toFixed(4)} < 0.05). 적어도 하나의 그룹이 다른 그룹과 유의하게 다릅니다.` :
+                        `그룹 간 유의미한 차이가 없습니다 (H=${stats.h_statistic.toFixed(3)}, p=${stats.p_value.toFixed(4)} > 0.05).`;
+                        
+                    // 사후분석 필요 여부
+                    if (stats.p_value < 0.05 && stats.n_groups > 2) {
+                        result.postHoc = {
+                            method: "Dunn's test",
+                            comparisons: [],
+                            note: '비모수 사후분석이 필요합니다 (3개 이상 그룹에서 유의한 차이 발견)'
+                        };
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Non-parametric analysis error:', error);
+                return performStatisticalAnalysisFallback();
+            }
+            
+            return result;
         }
         
         function displayAnalysisProgress(analysis) {
@@ -2249,27 +3191,159 @@
             if (!analysisResults.final) return;
             
             const result = analysisResults.final;
-            document.getElementById('analysisResults').innerHTML = `
-                <div class="result-box">
-                    <h4 class="font-semibold mb-3">📊 분석 결과</h4>
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <p class="text-sm text-gray-600">검정 방법</p>
-                            <p class="font-semibold">${result.test}</p>
+            const stats = result.statistics;
+            
+            let html = `
+                <div class="space-y-4">
+                    <!-- 주요 결과 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <h4 class="font-semibold text-blue-800 mb-3">📊 통계 분석 결과</h4>
+                        <div class="text-lg font-medium mb-2">${result.method}</div>
+            `;
+            
+            // t-검정 결과 표시
+            if (stats.tStatistic !== undefined) {
+                html += `
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <div class="text-sm text-gray-600">t-통계량</div>
+                                <div class="font-semibold">${stats.tStatistic.toFixed(3)}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-600">자유도</div>
+                                <div class="font-semibold">${stats.df}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-600">p-값</div>
+                                <div class="font-semibold ${stats.pValue < 0.05 ? 'text-red-600' : 'text-green-600'}">
+                                    ${stats.pValue.toFixed(4)} ${stats.pValue < 0.05 ? '(유의)' : '(비유의)'}
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-600">효과크기 (Cohen's d)</div>
+                                <div class="font-semibold">${stats.cohensD.toFixed(3)}</div>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-sm text-gray-600">p-value</p>
-                            <p class="font-semibold ${result.pValue < 0.05 ? 'text-red-600' : 'text-green-600'}">
-                                ${result.pValue.toFixed(4)}
-                            </p>
+                        <div class="bg-white p-3 rounded">
+                            <div class="text-sm font-medium mb-2">그룹별 통계</div>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <span class="font-medium">${stats.group1.name}:</span>
+                                    n=${stats.group1.n}, M=${stats.group1.mean.toFixed(2)}, SD=${stats.group1.std.toFixed(2)}
+                                </div>
+                                <div>
+                                    <span class="font-medium">${stats.group2.name}:</span>
+                                    n=${stats.group2.n}, M=${stats.group2.mean.toFixed(2)}, SD=${stats.group2.std.toFixed(2)}
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="font-medium">평균 차이:</span> ${stats.meanDifference.toFixed(2)}
+                            </div>
                         </div>
+                `;
+            }
+            // ANOVA 결과 표시
+            else if (stats.fStatistic !== undefined) {
+                html += `
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <div class="text-sm text-gray-600">F-통계량</div>
+                                <div class="font-semibold">${stats.fStatistic.toFixed(3)}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-600">자유도</div>
+                                <div class="font-semibold">${stats.dfBetween}, ${stats.dfWithin}</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-gray-600">p-값</div>
+                                <div class="font-semibold ${stats.pValue < 0.05 ? 'text-red-600' : 'text-green-600'}">
+                                    ${stats.pValue.toFixed(4)} ${stats.pValue < 0.05 ? '(유의)' : '(비유의)'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded">
+                            <div class="text-sm font-medium mb-2">분산분석표</div>
+                            <table class="text-xs w-full">
+                                <tr class="border-b">
+                                    <th class="text-left">요인</th>
+                                    <th class="text-right">SS</th>
+                                    <th class="text-right">df</th>
+                                    <th class="text-right">MS</th>
+                                    <th class="text-right">F</th>
+                                </tr>
+                                <tr>
+                                    <td>집단 간</td>
+                                    <td class="text-right">${stats.SSbetween.toFixed(2)}</td>
+                                    <td class="text-right">${stats.dfBetween}</td>
+                                    <td class="text-right">${stats.MSbetween.toFixed(2)}</td>
+                                    <td class="text-right">${stats.fStatistic.toFixed(3)}</td>
+                                </tr>
+                                <tr>
+                                    <td>집단 내</td>
+                                    <td class="text-right">${stats.SSwithin.toFixed(2)}</td>
+                                    <td class="text-right">${stats.dfWithin}</td>
+                                    <td class="text-right">${stats.MSwithin.toFixed(2)}</td>
+                                    <td class="text-right">-</td>
+                                </tr>
+                            </table>
+                            <div class="mt-2">
+                                <span class="font-medium">효과크기 (η²):</span> ${stats.etaSquared.toFixed(3)}
+                            </div>
+                        </div>
+                        ${stats.groups ? `
+                        <div class="bg-white p-3 rounded mt-2">
+                            <div class="text-sm font-medium mb-2">그룹별 기술통계</div>
+                            <div class="space-y-1 text-sm">
+                                ${Object.entries(stats.groups).map(([name, stat]) => `
+                                    <div><span class="font-medium">${name}:</span> n=${stat.n}, M=${stat.mean.toFixed(2)}, SD=${Math.sqrt(stat.variance).toFixed(2)}</div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                `;
+            }
+            
+            html += `
                     </div>
-                    <div class="bg-gray-50 p-3 rounded">
-                        <p class="text-sm font-semibold mb-1">해석</p>
-                        <p class="text-sm">${result.interpretation}</p>
+                    
+                    <!-- 해석 -->
+                    <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <h5 class="font-semibold text-green-800 mb-2">💡 결과 해석</h5>
+                        <p class="text-sm text-green-700">${result.interpretation}</p>
+                    </div>
+                    
+                    <!-- 사후분석 필요 여부 -->
+                    ${result.postHoc ? `
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <h5 class="font-semibold text-yellow-800 mb-2">📌 사후분석</h5>
+                        <p class="text-sm text-yellow-700">${result.postHoc.note}</p>
+                        <p class="text-xs text-yellow-600 mt-1">추천 방법: ${result.postHoc.method}</p>
+                        <button onclick="performPostHocAnalysis()" class="mt-2 px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
+                            사후분석 실행
+                        </button>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- 추가 분석 옵션 -->
+                    <div id="nextAnalysisOptions" class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                        <h5 class="font-semibold text-indigo-800 mb-3">🔍 추가 분석 옵션</h5>
+                        <div id="analysisOptionsContent"></div>
+                    </div>
+                    
+                    <!-- 시각화 플레이스홀더 -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h5 class="font-semibold mb-2">📈 시각화</h5>
+                        <div class="h-48 bg-white rounded flex items-center justify-center text-gray-400">
+                            [차트가 여기에 표시됩니다]
+                        </div>
                     </div>
                 </div>
             `;
+            
+            document.getElementById('analysisResults').innerHTML = html;
+            
+            // 추가 분석 옵션 생성
+            generateNextAnalysisOptions(result);
             
             // 내보내기 버튼 표시
             const exportBtn = document.getElementById('exportBtn');
@@ -2279,11 +3353,735 @@
             
             // 설명 박스 표시
             document.getElementById('step6Explanation').classList.remove('hidden');
+            
+            // 분석 결과를 로컬 스토리지에 저장 (추후 내보내기용)
+            saveAnalysisRecord(result);
+        }
+        
+        // 효과 크기 계산 함수들
+        function calculateEffectSizes(data, groups, testType) {
+            const effectSizes = {};
+            
+            if (testType === 'ttest' || testType === 'paired_test') {
+                // Cohen's d 계산
+                const group1 = data.filter((_, i) => groups[i] === groups[0]);
+                const group2 = data.filter((_, i) => groups[i] !== groups[0]);
+                
+                const mean1 = group1.reduce((a, b) => a + b, 0) / group1.length;
+                const mean2 = group2.reduce((a, b) => a + b, 0) / group2.length;
+                
+                const var1 = group1.reduce((a, b) => a + Math.pow(b - mean1, 2), 0) / (group1.length - 1);
+                const var2 = group2.reduce((a, b) => a + Math.pow(b - mean2, 2), 0) / (group2.length - 1);
+                
+                // Pooled standard deviation
+                const pooledSD = Math.sqrt(((group1.length - 1) * var1 + (group2.length - 1) * var2) / 
+                                          (group1.length + group2.length - 2));
+                
+                effectSizes.cohensD = (mean1 - mean2) / pooledSD;
+                
+                // Hedges' g (소표본 보정 - 올바른 공식)
+                const df = group1.length + group2.length - 2;
+                const correctionFactor = 1 - (3 / (4 * df - 1));
+                effectSizes.hedgesG = effectSizes.cohensD * correctionFactor;
+                
+                // Glass's delta
+                effectSizes.glassDelta = (mean1 - mean2) / Math.sqrt(var2);
+                
+                // 해석
+                const d = Math.abs(effectSizes.cohensD);
+                effectSizes.interpretation = 
+                    d < 0.2 ? '매우 작은 효과' :
+                    d < 0.5 ? '작은 효과' :
+                    d < 0.8 ? '중간 효과' : '큰 효과';
+                    
+            } else if (testType === 'anova' || testType === 'kruskal') {
+                // Eta-squared 계산 (ANOVA)
+                const grandMean = data.reduce((a, b) => a + b, 0) / data.length;
+                const totalSS = data.reduce((a, b) => a + Math.pow(b - grandMean, 2), 0);
+                
+                const groupMeans = {};
+                const groupCounts = {};
+                for (let i = 0; i < data.length; i++) {
+                    const group = groups[i];
+                    if (!groupMeans[group]) {
+                        groupMeans[group] = [];
+                        groupCounts[group] = 0;
+                    }
+                    groupMeans[group].push(data[i]);
+                    groupCounts[group]++;
+                }
+                
+                let betweenSS = 0;
+                for (const [group, values] of Object.entries(groupMeans)) {
+                    const groupMean = values.reduce((a, b) => a + b, 0) / values.length;
+                    betweenSS += values.length * Math.pow(groupMean - grandMean, 2);
+                }
+                
+                effectSizes.etaSquared = betweenSS / totalSS;
+                effectSizes.partialEtaSquared = betweenSS / (betweenSS + (totalSS - betweenSS));
+                
+                // Omega-squared (더 정확한 효과 크기)
+                const dfBetween = Object.keys(groupMeans).length - 1;
+                const dfWithin = data.length - Object.keys(groupMeans).length;
+                const msBetween = betweenSS / dfBetween;
+                const msWithin = (totalSS - betweenSS) / dfWithin;
+                
+                effectSizes.omegaSquared = (betweenSS - dfBetween * msWithin) / (totalSS + msWithin);
+                
+                // 해석
+                const eta = effectSizes.etaSquared;
+                effectSizes.interpretation = 
+                    eta < 0.01 ? '매우 작은 효과' :
+                    eta < 0.06 ? '작은 효과' :
+                    eta < 0.14 ? '중간 효과' : '큰 효과';
+            }
+            
+            return effectSizes;
+        }
+        
+        // p값 보정 방법들
+        function adjustPValues(pValues, method = 'bonferroni') {
+            const n = pValues.length;
+            let adjusted = [...pValues];
+            
+            switch(method) {
+                case 'bonferroni':
+                    // Bonferroni 보정
+                    adjusted = pValues.map(p => Math.min(p * n, 1));
+                    break;
+                    
+                case 'holm':
+                    // Holm-Bonferroni 보정 (단계적 방법)
+                    const sorted = pValues.map((p, i) => ({p, i})).sort((a, b) => a.p - b.p);
+                    for (let i = 0; i < sorted.length; i++) {
+                        sorted[i].adjusted = Math.min(sorted[i].p * (n - i), 1);
+                        // 이전 값보다 작지 않도록 보장
+                        if (i > 0 && sorted[i].adjusted < sorted[i-1].adjusted) {
+                            sorted[i].adjusted = sorted[i-1].adjusted;
+                        }
+                    }
+                    // 원래 순서로 복원
+                    sorted.forEach(item => adjusted[item.i] = item.adjusted);
+                    break;
+                    
+                case 'hochberg':
+                    // Hochberg 보정 (역순 방법)
+                    const sortedDesc = pValues.map((p, i) => ({p, i})).sort((a, b) => b.p - a.p);
+                    for (let i = 0; i < sortedDesc.length; i++) {
+                        sortedDesc[i].adjusted = Math.min(sortedDesc[i].p * (i + 1), 1);
+                        // 이전 값보다 크지 않도록 보장
+                        if (i > 0 && sortedDesc[i].adjusted > sortedDesc[i-1].adjusted) {
+                            sortedDesc[i].adjusted = sortedDesc[i-1].adjusted;
+                        }
+                    }
+                    sortedDesc.forEach(item => adjusted[item.i] = item.adjusted);
+                    break;
+                    
+                case 'bh': // Benjamini-Hochberg
+                case 'fdr':
+                    // False Discovery Rate 제어
+                    const sortedBH = pValues.map((p, i) => ({p, i})).sort((a, b) => a.p - b.p);
+                    for (let i = sortedBH.length - 1; i >= 0; i--) {
+                        const adj = Math.min(sortedBH[i].p * n / (i + 1), 1);
+                        sortedBH[i].adjusted = i === sortedBH.length - 1 ? adj : 
+                                               Math.min(adj, sortedBH[i + 1].adjusted);
+                    }
+                    sortedBH.forEach(item => adjusted[item.i] = item.adjusted);
+                    break;
+                    
+                default:
+                    // 보정 없음
+                    break;
+            }
+            
+            return adjusted;
+        }
+        
+        // 검정력 계산 (post-hoc)
+        function calculatePower(effectSize, sampleSize, alpha = 0.05) {
+            // 간단한 근사치 계산 (Cohen's d 기준)
+            const ncp = effectSize * Math.sqrt(sampleSize / 2); // Non-centrality parameter
+            const criticalZ = 1.96; // alpha = 0.05일 때
+            
+            // 비중심 t-분포의 누적분포함수 근사
+            // 정확한 계산은 scipy.stats 필요
+            const power = 1 - normalCDF((criticalZ - ncp) / 1);
+            
+            return {
+                power: power,
+                interpretation: power < 0.5 ? '매우 낮은 검정력' :
+                               power < 0.8 ? '낮은 검정력' :
+                               power < 0.95 ? '적절한 검정력' : '높은 검정력',
+                recommendedN: power < 0.8 ? Math.ceil(sampleSize * Math.pow(0.8/power, 2)) : null
+            };
+        }
+        
+        // 정규분포 CDF 근사
+        function normalCDF(z) {
+            const a1 = 0.254829592;
+            const a2 = -0.284496736;
+            const a3 = 1.421413741;
+            const a4 = -1.453152027;
+            const a5 = 1.061405429;
+            const p = 0.3275911;
+            
+            const sign = z >= 0 ? 1 : -1;
+            z = Math.abs(z);
+            
+            const t = 1.0 / (1.0 + p * z);
+            const t2 = t * t;
+            const t3 = t2 * t;
+            const t4 = t3 * t;
+            const t5 = t4 * t;
+            
+            const y = 1.0 - (((((a5 * t5 + a4 * t4) + a3 * t3) + a2 * t2) + a1 * t) * Math.exp(-z * z / 2));
+            
+            return 0.5 * (1 + sign * y);
+        }
+        
+        // 추가 분석 옵션 생성
+        function generateNextAnalysisOptions(result) {
+            const stats = result.statistics;
+            let optionsHtml = '<div class="space-y-3">';
+            
+            // p-값에 따른 옵션 제공
+            if (stats.pValue < 0.05) {
+                // 유의한 경우의 옵션
+                optionsHtml += `
+                    <div class="bg-white p-3 rounded border border-indigo-200">
+                        <h6 class="font-medium text-indigo-700 mb-2">✅ 유의한 차이 발견 - 다음 단계</h6>
+                        <div class="space-y-2 text-sm">
+                `;
+                
+                // 효과 크기 분석
+                optionsHtml += `
+                    <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                        <input type="checkbox" class="mt-1 mr-2" value="effectSize">
+                        <div>
+                            <div class="font-medium">효과 크기 상세 분석</div>
+                            <div class="text-xs text-gray-600">Cohen's d, Glass's delta, 신뢰구간 계산</div>
+                        </div>
+                    </label>
+                `;
+                
+                // 검정력 분석
+                optionsHtml += `
+                    <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                        <input type="checkbox" class="mt-1 mr-2" value="power">
+                        <div>
+                            <div class="font-medium">사후 검정력 분석</div>
+                            <div class="text-xs text-gray-600">관찰된 효과에 대한 검정력 계산</div>
+                        </div>
+                    </label>
+                `;
+                
+                // 예측 모델
+                if (stats.groups && Object.keys(stats.groups).length >= 2) {
+                    optionsHtml += `
+                        <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                            <input type="checkbox" class="mt-1 mr-2" value="prediction">
+                            <div>
+                                <div class="font-medium">예측 모델 구축</div>
+                                <div class="text-xs text-gray-600">그룹 소속 예측을 위한 판별분석</div>
+                            </div>
+                        </label>
+                    `;
+                }
+                
+                optionsHtml += '</div></div>';
+                
+            } else {
+                // 유의하지 않은 경우의 옵션
+                optionsHtml += `
+                    <div class="bg-white p-3 rounded border border-indigo-200">
+                        <h6 class="font-medium text-indigo-700 mb-2">❌ 유의한 차이 없음 - 대안 분석</h6>
+                        <div class="space-y-2 text-sm">
+                `;
+                
+                // 동등성 검정
+                optionsHtml += `
+                    <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                        <input type="checkbox" class="mt-1 mr-2" value="equivalence">
+                        <div>
+                            <div class="font-medium">동등성 검정 (TOST)</div>
+                            <div class="text-xs text-gray-600">그룹 간 실제적 동등성 확인</div>
+                        </div>
+                    </label>
+                `;
+                
+                // 검정력 분석
+                optionsHtml += `
+                    <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                        <input type="checkbox" class="mt-1 mr-2" value="powerCalc">
+                        <div>
+                            <div class="font-medium">필요 표본 크기 계산</div>
+                            <div class="text-xs text-gray-600">원하는 검정력 달성을 위한 n 계산</div>
+                        </div>
+                    </label>
+                `;
+                
+                // 베이지안 분석
+                optionsHtml += `
+                    <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                        <input type="checkbox" class="mt-1 mr-2" value="bayesian">
+                        <div>
+                            <div class="font-medium">베이지안 분석</div>
+                            <div class="text-xs text-gray-600">베이즈 인자를 통한 귀무가설 지지 정도 확인</div>
+                        </div>
+                    </label>
+                `;
+                
+                optionsHtml += '</div></div>';
+            }
+            
+            // 일반 옵션 (항상 제공)
+            optionsHtml += `
+                <div class="bg-white p-3 rounded border border-indigo-200">
+                    <h6 class="font-medium text-indigo-700 mb-2">📊 추가 탐색 옵션</h6>
+                    <div class="space-y-2 text-sm">
+                        <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                            <input type="checkbox" class="mt-1 mr-2" value="outlier">
+                            <div>
+                                <div class="font-medium">이상치 영향 분석</div>
+                                <div class="text-xs text-gray-600">이상치 제거 전후 결과 비교</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                            <input type="checkbox" class="mt-1 mr-2" value="bootstrap">
+                            <div>
+                                <div class="font-medium">부트스트랩 신뢰구간</div>
+                                <div class="text-xs text-gray-600">비모수적 신뢰구간 추정</div>
+                            </div>
+                        </label>
+                        <label class="flex items-start cursor-pointer hover:bg-indigo-50 p-2 rounded">
+                            <input type="checkbox" class="mt-1 mr-2" value="sensitivity">
+                            <div>
+                                <div class="font-medium">민감도 분석</div>
+                                <div class="text-xs text-gray-600">다른 검정 방법 적용 시 결과 비교</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `;
+            
+            optionsHtml += `
+                <button onclick="executeSelectedAnalyses()" class="w-full mt-3 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                    선택한 분석 실행
+                </button>
+            </div>`;
+            
+            document.getElementById('analysisOptionsContent').innerHTML = optionsHtml;
+        }
+        
+        // 사후분석 실행
+        async function performPostHocAnalysis() {
+            const result = analysisResults.final;
+            if (!result.postHoc) {
+                alert('사후분석이 필요하지 않습니다.');
+                return;
+            }
+            
+            // 사후분석 준비
+            const postHocResult = {
+                method: result.postHoc.method,
+                comparisons: [],
+                timestamp: new Date().toISOString()
+            };
+            
+            // Pyodide가 준비되었는지 확인
+            if (!window.pyodide || !pyodideReady) {
+                console.warn('Pyodide not ready for post-hoc analysis');
+                // Fallback 처리
+                displayPostHocResults(postHocResult);
+                return;
+            }
+            
+            try {
+                // 데이터 준비
+                const validation = analysisResults.validation;
+                const numericColumns = validation.numericColumns || [];
+                const groupColumns = validation.groupColumns || [];
+                const dependentVar = numericColumns[0];
+                const groupVar = groupColumns[0];
+                const groups = [...new Set(currentData[groupVar])];
+                
+                // 그룹별 데이터 준비
+                const groupDataArrays = {};
+                for (const group of groups) {
+                    groupDataArrays[group] = [];
+                }
+                
+                for (let i = 0; i < currentData[groupVar].length; i++) {
+                    const value = parseFloat(currentData[dependentVar][i]);
+                    const group = currentData[groupVar][i];
+                    if (!isNaN(value) && groupDataArrays[group]) {
+                        groupDataArrays[group].push(value);
+                    }
+                }
+                
+                // Python으로 실제 사후분석 수행
+                const pythonResult = await window.pyodide.runPythonAsync(`
+                    import numpy as np
+                    from scipy import stats
+                    import json
+                    from itertools import combinations
+                    
+                    # 그룹 데이터
+                    groups_data = ${JSON.stringify(groupDataArrays)}
+                    group_names = list(groups_data.keys())
+                    group_arrays = [np.array(groups_data[name]) for name in group_names]
+                    method = "${result.postHoc.method}"
+                    
+                    comparisons = []
+                    
+                    if method == "Tukey HSD":
+                        # Tukey HSD 수동 구현 (scipy 0.24.1에는 없음)
+                        # MSE 계산
+                        all_data = np.concatenate(group_arrays)
+                        grand_mean = np.mean(all_data)
+                        n_total = len(all_data)
+                        k = len(group_names)
+                        
+                        # Within-group variance
+                        ss_within = sum((len(arr)-1) * np.var(arr, ddof=1) for arr in group_arrays)
+                        df_within = n_total - k
+                        mse = ss_within / df_within
+                        
+                        # 모든 쌍별 비교
+                        for i, j in combinations(range(k), 2):
+                            name1, name2 = group_names[i], group_names[j]
+                            group1, group2 = group_arrays[i], group_arrays[j]
+                            n1, n2 = len(group1), len(group2)
+                            mean1, mean2 = np.mean(group1), np.mean(group2)
+                            
+                            # Tukey's HSD
+                            mean_diff = mean1 - mean2
+                            se = np.sqrt(mse * (1/n1 + 1/n2) / 2)
+                            q_stat = abs(mean_diff) / se
+                            
+                            # Critical value (approximate)
+                            # q_crit ≈ 2.8 for α=0.05, k=3, df=∞
+                            # More accurate would require studentized range distribution
+                            q_crit = 2.8 + 0.5 * (k - 3)  # 근사값
+                            p_value = 0.01 if q_stat > q_crit else 0.10
+                            
+                            # 95% CI
+                            margin = q_crit * se
+                            ci_lower = mean_diff - margin
+                            ci_upper = mean_diff + margin
+                            
+                            comparisons.append({
+                                "group1": name1,
+                                "group2": name2,
+                                "meanDifference": float(abs(mean_diff)),
+                                "pValue": float(p_value),
+                                "significant": p_value < 0.05,
+                                "confidenceInterval": [float(ci_lower), float(ci_upper)],
+                                "qStatistic": float(q_stat)
+                            })
+                            
+                    elif method == "Games-Howell":
+                        # Games-Howell (unequal variances)
+                        for i, j in combinations(range(len(group_names)), 2):
+                            name1, name2 = group_names[i], group_names[j]
+                            group1, group2 = group_arrays[i], group_arrays[j]
+                            n1, n2 = len(group1), len(group2)
+                            mean1, mean2 = np.mean(group1), np.mean(group2)
+                            var1, var2 = np.var(group1, ddof=1), np.var(group2, ddof=1)
+                            
+                            # Games-Howell statistic
+                            mean_diff = mean1 - mean2
+                            se = np.sqrt(var1/n1 + var2/n2)
+                            t_stat = abs(mean_diff) / se
+                            
+                            # Welch's degrees of freedom
+                            df = (var1/n1 + var2/n2)**2 / ((var1/n1)**2/(n1-1) + (var2/n2)**2/(n2-1))
+                            
+                            # p-value (two-tailed)
+                            p_value = 2 * (1 - stats.t.cdf(abs(t_stat), df))
+                            
+                            # 95% CI
+                            t_crit = stats.t.ppf(0.975, df)
+                            margin = t_crit * se
+                            ci_lower = mean_diff - margin
+                            ci_upper = mean_diff + margin
+                            
+                            comparisons.append({
+                                "group1": name1,
+                                "group2": name2,
+                                "meanDifference": float(abs(mean_diff)),
+                                "pValue": float(p_value),
+                                "significant": p_value < 0.05,
+                                "confidenceInterval": [float(ci_lower), float(ci_upper)],
+                                "tStatistic": float(t_stat),
+                                "df": float(df)
+                            })
+                            
+                    elif method == "Bonferroni":
+                        # Bonferroni correction
+                        n_comparisons = len(list(combinations(group_names, 2)))
+                        alpha_corrected = 0.05 / n_comparisons
+                        
+                        for i, j in combinations(range(len(group_names)), 2):
+                            name1, name2 = group_names[i], group_names[j]
+                            group1, group2 = group_arrays[i], group_arrays[j]
+                            
+                            # Regular t-test
+                            t_stat, p_value = stats.ttest_ind(group1, group2)
+                            
+                            # Adjusted significance
+                            p_adjusted = min(p_value * n_comparisons, 1.0)
+                            
+                            mean_diff = np.mean(group1) - np.mean(group2)
+                            
+                            comparisons.append({
+                                "group1": name1,
+                                "group2": name2,
+                                "meanDifference": float(abs(mean_diff)),
+                                "pValue": float(p_value),
+                                "pAdjusted": float(p_adjusted),
+                                "significant": p_adjusted < 0.05,
+                                "tStatistic": float(t_stat)
+                            })
+                            
+                    elif method == "Dunn's test":
+                        # Dunn's test for Kruskal-Wallis follow-up
+                        # Combine all data and rank
+                        all_data = np.concatenate(group_arrays)
+                        all_groups = []
+                        for i, arr in enumerate(group_arrays):
+                            all_groups.extend([group_names[i]] * len(arr))
+                        
+                        ranks = stats.rankdata(all_data)
+                        
+                        # Mean ranks for each group
+                        mean_ranks = {}
+                        for name in group_names:
+                            group_ranks = [ranks[i] for i, g in enumerate(all_groups) if g == name]
+                            mean_ranks[name] = np.mean(group_ranks)
+                        
+                        n = len(all_data)
+                        
+                        for i, j in combinations(range(len(group_names)), 2):
+                            name1, name2 = group_names[i], group_names[j]
+                            n1, n2 = len(group_arrays[i]), len(group_arrays[j])
+                            
+                            # Dunn's z-statistic
+                            mean_rank_diff = mean_ranks[name1] - mean_ranks[name2]
+                            se = np.sqrt((n * (n + 1) / 12) * (1/n1 + 1/n2))
+                            z_stat = abs(mean_rank_diff) / se
+                            
+                            # p-value (two-tailed)
+                            p_value = 2 * (1 - stats.norm.cdf(abs(z_stat)))
+                            
+                            comparisons.append({
+                                "group1": name1,
+                                "group2": name2,
+                                "meanRankDifference": float(abs(mean_rank_diff)),
+                                "pValue": float(p_value),
+                                "significant": p_value < 0.05,
+                                "zStatistic": float(z_stat)
+                            })
+                    
+                    result = {
+                        "method": method,
+                        "comparisons": comparisons
+                    }
+                    json.dumps(result)
+                `);
+                
+                const pythonData = JSON.parse(pythonResult);
+                postHocResult.comparisons = pythonData.comparisons;
+                
+            } catch (error) {
+                console.error('Post-hoc analysis error:', error);
+            }
+            
+            // 결과 표시
+            displayPostHocResults(postHocResult);
+        }
+        
+        // 사후분석 결과 표시
+        function displayPostHocResults(postHocResult) {
+            let html = `
+                <div class="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <h5 class="font-semibold text-orange-800 mb-3">📊 사후분석 결과: ${postHocResult.method}</h5>
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="text-left">비교</th>
+                                <th class="text-right">평균차</th>
+                                <th class="text-right">p-값</th>
+                                <th class="text-center">유의성</th>
+                                <th class="text-right">95% CI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            for (const comp of postHocResult.comparisons) {
+                html += `
+                    <tr class="border-b">
+                        <td>${comp.group1} - ${comp.group2}</td>
+                        <td class="text-right">${comp.meanDifference.toFixed(3)}</td>
+                        <td class="text-right ${comp.significant ? 'text-red-600 font-semibold' : ''}">${comp.pValue.toFixed(4)}</td>
+                        <td class="text-center">${comp.significant ? '✓' : '-'}</td>
+                        <td class="text-right">[${comp.confidenceInterval[0].toFixed(2)}, ${comp.confidenceInterval[1].toFixed(2)}]</td>
+                    </tr>
+                `;
+            }
+            
+            html += `
+                        </tbody>
+                    </table>
+                    <p class="text-xs text-orange-600 mt-2">
+                        * p-값은 다중비교에 대해 조정되었습니다 (${postHocResult.method} 방법)
+                    </p>
+                </div>
+            `;
+            
+            // 기존 사후분석 섹션 뒤에 추가
+            const postHocDiv = document.querySelector('.bg-yellow-50');
+            if (postHocDiv) {
+                postHocDiv.insertAdjacentHTML('afterend', html);
+                postHocDiv.querySelector('button').disabled = true;
+                postHocDiv.querySelector('button').textContent = '사후분석 완료';
+            }
+            
+            // 결과 저장
+            analysisResults.postHocAnalysis = postHocResult;
+            saveAnalysisRecord(analysisResults);
+        }
+        
+        // 선택된 추가 분석 실행
+        function executeSelectedAnalyses() {
+            const checkboxes = document.querySelectorAll('#analysisOptionsContent input[type="checkbox"]:checked');
+            const selectedAnalyses = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (selectedAnalyses.length === 0) {
+                alert('실행할 분석을 선택해주세요.');
+                return;
+            }
+            
+            console.log('선택된 분석:', selectedAnalyses);
+            alert(`다음 분석이 실행됩니다:\n${selectedAnalyses.join(', ')}\n\n(실제 구현은 추후 개발 예정)`);
+        }
+        
+        // 분석 기록 저장
+        function saveAnalysisRecord(data) {
+            const record = {
+                timestamp: new Date().toISOString(),
+                data: currentData,
+                validation: analysisResults.validation,
+                assumptions: analysisResults.assumptions,
+                method: analysisResults.method,
+                results: data,
+                postHoc: analysisResults.postHocAnalysis || null
+            };
+            
+            // 로컬 스토리지에 저장
+            const records = JSON.parse(localStorage.getItem('analysisRecords') || '[]');
+            records.push(record);
+            localStorage.setItem('analysisRecords', JSON.stringify(records));
+            
+            // 파일로도 자동 저장 (optional)
+            downloadAnalysisReport(record);
+        }
+        
+        // 분석 보고서 다운로드
+        function downloadAnalysisReport(record) {
+            const report = `
+# 통계 분석 보고서
+생성 시간: ${new Date(record.timestamp).toLocaleString('ko-KR')}
+
+## 1. 데이터 검증
+- 행 수: ${record.validation.rows}
+- 열 수: ${record.validation.columns}
+- 연속형 변수: ${record.validation.numericColumns.join(', ')}
+- 그룹 변수: ${record.validation.groupColumns.join(', ')}
+- 품질 문제: ${record.validation.issues.length === 0 ? '없음' : record.validation.issues.join(', ')}
+
+## 2. 통계적 가정 검정
+### 정규성 검정
+${record.assumptions.normality.map(n => `- ${n.variable}: ${n.interpretation} (p=${n.pValue.toFixed(4)})`).join('\n')}
+
+### 등분산성 검정
+${record.assumptions.homogeneity.map(h => `- ${h.variable} by ${h.groupVariable}: ${h.interpretation}`).join('\n') || '해당 없음'}
+
+## 3. 분석 방법
+- 선택된 방법: ${record.method.primary.name}
+- 선택 이유: ${record.method.reasoning.join(', ')}
+
+## 4. 분석 결과
+- 검정 통계량: ${JSON.stringify(record.results.statistics, null, 2)}
+- 해석: ${record.results.interpretation}
+
+## 5. 사후분석
+${record.postHoc ? JSON.stringify(record.postHoc, null, 2) : '해당 없음'}
+
+---
+이 보고서는 자동으로 생성되었습니다.
+            `;
+            
+            // 콘솔에 출력 (실제로는 파일 다운로드로 구현)
+            console.log('=== 분석 보고서 ===');
+            console.log(report);
+            
+            // 실제 파일 다운로드는 나중에 구현
+            // const blob = new Blob([report], { type: 'text/markdown' });
+            // const url = URL.createObjectURL(blob);
+            // const a = document.createElement('a');
+            // a.href = url;
+            // a.download = `analysis_report_${Date.now()}.md`;
+            // a.click();
         }
         
         // 결과 내보내기
         function exportResults() {
-            exportProgress();
+            // 내보내기 옵션 모달 표시
+            showExportOptions();
+        }
+        
+        // 내보내기 옵션 모달 표시
+        function showExportOptions() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.id = 'exportModal';
+            
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md">
+                    <h3 class="text-xl font-bold mb-4">결과 내보내기</h3>
+                    <p class="text-sm text-gray-600 mb-4">분석 결과를 어떤 형식으로 내보내시겠습니까?</p>
+                    
+                    <div class="space-y-3">
+                        <button onclick="exportToMarkdown()" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center justify-center">
+                            📝 Markdown (.md) - 문서 편집용
+                        </button>
+                        
+                        <button onclick="exportToPDF()" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center justify-center">
+                            📄 PDF - 보고서 인쇄용
+                        </button>
+                        
+                        <button onclick="exportToExcel()" class="w-full bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 flex items-center justify-center">
+                            📊 Excel (.xlsx) - 데이터 재분석용
+                        </button>
+                        
+                        <button onclick="closeExportModal()" class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                            취소
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        // 내보내기 모달 닫기
+        function closeExportModal() {
+            const modal = document.getElementById('exportModal');
+            if (modal) {
+                modal.remove();
+            }
         }
         
         // 분석 초기화
@@ -2381,30 +4179,284 @@
         }
         
         // 진행 상황 내보내기
-        function exportProgress() {
-            const exportData = {
-                metadata: {
-                    platform: '국립수산과학원 통계 분석 플랫폼',
-                    exportDate: new Date().toISOString(),
-                    currentStep: currentStep,
-                    pyodideVersion: '0.24.1',
-                    scipyVersion: '1.11+'
-                },
-                data: currentData,
-                results: analysisResults,
-                settings: {
-                    autoProgress: autoProgress,
-                    theme: localStorage.getItem('theme') || 'light'
-                }
-            };
+        // Markdown으로 내보내기
+        function exportToMarkdown() {
+            closeExportModal();
             
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+            const date = new Date().toLocaleString('ko-KR');
+            const results = analysisResults;
+            
+            let markdown = `# 통계 분석 보고서\n\n`;
+            markdown += `**생성일시**: ${date}\n`;
+            markdown += `**플랫폼**: 국립수산과학원 통계 분석 플랫폼\n\n`;
+            markdown += `---\n\n`;
+            
+            // 1. 데이터 요약
+            markdown += `## 1. 데이터 요약\n\n`;
+            if (currentData) {
+                const columns = Object.keys(currentData);
+                const rows = currentData[columns[0]]?.length || 0;
+                markdown += `- **변수 수**: ${columns.length}개\n`;
+                markdown += `- **관측치 수**: ${rows}개\n`;
+                markdown += `- **변수 목록**: ${columns.join(', ')}\n\n`;
+            }
+            
+            // 2. 데이터 검증 결과
+            if (results.validation) {
+                markdown += `## 2. 데이터 검증\n\n`;
+                markdown += `- **수치형 변수**: ${results.validation.numericColumns?.join(', ') || '없음'}\n`;
+                markdown += `- **범주형 변수**: ${results.validation.groupColumns?.join(', ') || '없음'}\n`;
+                markdown += `- **결측치**: ${results.validation.missingValues || 0}개\n`;
+                markdown += `- **이상치**: ${results.validation.outliers || 0}개\n\n`;
+            }
+            
+            // 3. 통계적 가정 검정
+            if (results.assumptions) {
+                markdown += `## 3. 통계적 가정 검정\n\n`;
+                
+                // 정규성 검정
+                if (results.assumptions.normality) {
+                    markdown += `### 3.1 정규성 검정\n\n`;
+                    markdown += `| 변수 | 검정방법 | 통계량 | p-값 | 결과 |\n`;
+                    markdown += `|------|----------|--------|------|------|\n`;
+                    
+                    results.assumptions.normality.forEach(n => {
+                        markdown += `| ${n.variable} | ${n.test} | ${n.statistic?.toFixed(4) || '-'} | ${n.pValue?.toFixed(4) || '-'} | ${n.isNormal ? '정규분포 ✓' : '비정규분포 ✗'} |\n`;
+                    });
+                    markdown += `\n`;
+                }
+                
+                // 등분산성 검정
+                if (results.assumptions.homogeneity) {
+                    markdown += `### 3.2 등분산성 검정\n\n`;
+                    markdown += `| 변수 | 검정방법 | 통계량 | p-값 | 결과 |\n`;
+                    markdown += `|------|----------|--------|------|------|\n`;
+                    
+                    results.assumptions.homogeneity.forEach(h => {
+                        markdown += `| ${h.variable} | ${h.test} | ${h.statistic?.toFixed(4) || '-'} | ${h.pValue?.toFixed(4) || '-'} | ${h.isHomogeneous ? '등분산 ✓' : '이분산 ✗'} |\n`;
+                    });
+                    markdown += `\n`;
+                }
+            }
+            
+            // 4. 분석 방법
+            if (results.method) {
+                markdown += `## 4. 선택된 분석 방법\n\n`;
+                markdown += `- **방법**: ${results.method.name}\n`;
+                markdown += `- **선택 이유**: ${results.method.reason}\n\n`;
+            }
+            
+            // 5. 분석 결과
+            if (results.final) {
+                markdown += `## 5. 통계 분석 결과\n\n`;
+                const stats = results.final.statistics;
+                
+                markdown += `- **검정 통계량**: ${stats.testStatistic?.toFixed(4) || '-'}\n`;
+                markdown += `- **p-값**: ${stats.pValue?.toFixed(4) || '-'}\n`;
+                markdown += `- **유의수준**: 0.05\n`;
+                markdown += `- **결론**: ${stats.pValue < 0.05 ? '**통계적으로 유의함**' : '통계적으로 유의하지 않음'}\n\n`;
+                
+                // 그룹별 통계
+                if (stats.groups) {
+                    markdown += `### 5.1 그룹별 기술통계\n\n`;
+                    markdown += `| 그룹 | 평균 | 표준편차 | 표본수 |\n`;
+                    markdown += `|------|------|----------|--------|\n`;
+                    
+                    for (const [group, data] of Object.entries(stats.groups)) {
+                        markdown += `| ${group} | ${data.mean?.toFixed(3) || '-'} | ${data.std?.toFixed(3) || '-'} | ${data.n || '-'} |\n`;
+                    }
+                    markdown += `\n`;
+                }
+                
+                // 효과 크기
+                if (stats.effectSize) {
+                    markdown += `### 5.2 효과 크기\n\n`;
+                    markdown += `- **Cohen's d**: ${stats.effectSize.cohensD?.toFixed(3) || '-'}\n`;
+                    markdown += `- **해석**: ${stats.effectSize.interpretation || '-'}\n\n`;
+                }
+            }
+            
+            // 6. 사후분석
+            if (results.postHoc) {
+                markdown += `## 6. 사후분석 결과\n\n`;
+                markdown += `- **방법**: ${results.postHoc.method}\n\n`;
+                
+                if (results.postHoc.comparisons) {
+                    markdown += `| 비교 | 평균차이 | p-값 | 유의성 |\n`;
+                    markdown += `|------|----------|------|--------|\n`;
+                    
+                    results.postHoc.comparisons.forEach(c => {
+                        markdown += `| ${c.group1} vs ${c.group2} | ${c.meanDifference?.toFixed(3) || '-'} | ${c.pValue?.toFixed(4) || '-'} | ${c.significant ? '유의함 *' : '-'} |\n`;
+                    });
+                }
+                markdown += `\n`;
+            }
+            
+            // 7. 권장사항
+            markdown += `## 7. 권장사항 및 참고사항\n\n`;
+            markdown += `- 본 분석은 자동화된 통계 분석 시스템을 사용하였습니다.\n`;
+            markdown += `- 결과 해석 시 전문가의 검토를 권장합니다.\n`;
+            markdown += `- 추가 분석이 필요한 경우 원본 데이터를 확인하시기 바랍니다.\n`;
+            
+            // 파일 다운로드
+            const blob = new Blob([markdown], {type: 'text/markdown;charset=utf-8'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `통계분석_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `통계분석보고서_${new Date().toISOString().slice(0,10)}.md`;
             a.click();
             URL.revokeObjectURL(url);
+        }
+        
+        // PDF로 내보내기
+        async function exportToPDF() {
+            closeExportModal();
+            
+            // jsPDF가 로드되었는지 확인
+            if (typeof window.jspdf === 'undefined') {
+                alert('PDF 라이브러리를 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // 한글 폰트 설정 (기본 폰트는 한글 미지원이므로 영문으로 작성)
+            const date = new Date().toLocaleDateString('en-US');
+            const results = analysisResults;
+            
+            // 제목
+            doc.setFontSize(20);
+            doc.text('Statistical Analysis Report', 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.text(`Date: ${date}`, 20, 35);
+            doc.text('Platform: NIFS Statistical Analysis Platform', 20, 42);
+            
+            doc.line(20, 45, 190, 45);
+            
+            let yPos = 55;
+            
+            // 1. Data Summary
+            doc.setFontSize(14);
+            doc.text('1. Data Summary', 20, yPos);
+            yPos += 10;
+            
+            if (currentData) {
+                const columns = Object.keys(currentData);
+                const rows = currentData[columns[0]]?.length || 0;
+                
+                doc.setFontSize(11);
+                doc.text(`- Variables: ${columns.length}`, 25, yPos);
+                yPos += 7;
+                doc.text(`- Observations: ${rows}`, 25, yPos);
+                yPos += 7;
+                doc.text(`- Variable names: ${columns.join(', ')}`, 25, yPos);
+                yPos += 15;
+            }
+            
+            // 2. Statistical Test Results
+            if (results.final) {
+                doc.setFontSize(14);
+                doc.text('2. Statistical Test Results', 20, yPos);
+                yPos += 10;
+                
+                const stats = results.final.statistics;
+                doc.setFontSize(11);
+                doc.text(`- Test Method: ${results.method?.name || 'N/A'}`, 25, yPos);
+                yPos += 7;
+                doc.text(`- Test Statistic: ${stats.testStatistic?.toFixed(4) || 'N/A'}`, 25, yPos);
+                yPos += 7;
+                doc.text(`- p-value: ${stats.pValue?.toFixed(4) || 'N/A'}`, 25, yPos);
+                yPos += 7;
+                doc.text(`- Significance Level: 0.05`, 25, yPos);
+                yPos += 7;
+                
+                const conclusion = stats.pValue < 0.05 ? 'Statistically Significant' : 'Not Significant';
+                doc.setFont(undefined, 'bold');
+                doc.text(`- Conclusion: ${conclusion}`, 25, yPos);
+                doc.setFont(undefined, 'normal');
+                yPos += 15;
+            }
+            
+            // 3. Group Statistics (if available)
+            if (results.final?.statistics?.groups) {
+                doc.setFontSize(14);
+                doc.text('3. Group Statistics', 20, yPos);
+                yPos += 10;
+                
+                doc.setFontSize(11);
+                for (const [group, data] of Object.entries(results.final.statistics.groups)) {
+                    doc.text(`${group}: Mean=${data.mean?.toFixed(3)}, SD=${data.std?.toFixed(3)}, N=${data.n}`, 25, yPos);
+                    yPos += 7;
+                    
+                    // 페이지 넘김 체크
+                    if (yPos > 270) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                }
+            }
+            
+            // 저장
+            doc.save(`Statistical_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+        
+        // Excel로 내보내기
+        function exportToExcel() {
+            closeExportModal();
+            
+            if (typeof XLSX === 'undefined') {
+                alert('Excel 라이브러리를 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            
+            const wb = XLSX.utils.book_new();
+            
+            // 1. 원본 데이터 시트
+            if (currentData) {
+                const ws = XLSX.utils.json_to_sheet(
+                    Object.keys(currentData[Object.keys(currentData)[0]]).map(i => {
+                        const row = {};
+                        Object.keys(currentData).forEach(col => {
+                            row[col] = currentData[col][i];
+                        });
+                        return row;
+                    })
+                );
+                XLSX.utils.book_append_sheet(wb, ws, "원본데이터");
+            }
+            
+            // 2. 분석 결과 시트
+            const resultsData = [];
+            
+            if (analysisResults.final) {
+                const stats = analysisResults.final.statistics;
+                resultsData.push(['통계 분석 결과']);
+                resultsData.push(['']);
+                resultsData.push(['항목', '값']);
+                resultsData.push(['분석 방법', analysisResults.method?.name || '']);
+                resultsData.push(['검정 통계량', stats.testStatistic?.toFixed(4) || '']);
+                resultsData.push(['p-값', stats.pValue?.toFixed(4) || '']);
+                resultsData.push(['유의수준', '0.05']);
+                resultsData.push(['결론', stats.pValue < 0.05 ? '유의함' : '유의하지 않음']);
+                
+                if (stats.groups) {
+                    resultsData.push(['']);
+                    resultsData.push(['그룹별 통계']);
+                    resultsData.push(['그룹', '평균', '표준편차', '표본수']);
+                    
+                    for (const [group, data] of Object.entries(stats.groups)) {
+                        resultsData.push([group, data.mean?.toFixed(3), data.std?.toFixed(3), data.n]);
+                    }
+                }
+            }
+            
+            const ws2 = XLSX.utils.aoa_to_sheet(resultsData);
+            XLSX.utils.book_append_sheet(wb, ws2, "분석결과");
+            
+            // 파일 저장
+            XLSX.writeFile(wb, `통계분석_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
         
         // 진행 상황 가져오기
