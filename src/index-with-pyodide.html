@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계 분석 도구 - 국립수산과학원</title>
+    
+    <!-- 보안 정책 -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self' data: blob: https://cdn.jsdelivr.net;
+        script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net;
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob:;
+        connect-src 'self' https://cdn.jsdelivr.net;
+        worker-src 'self' blob:;
+    ">
+    
+    <!-- 메타 정보 -->
+    <meta name="description" content="국립수산과학원 통계 분석 도구 - ANOVA, t-test, 회귀분석">
+    <meta name="author" content="National Institute of Fisheries Science">
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E📊%3C/text%3E%3C/svg%3E">
+    
+    <!-- 스타일 -->
+    <style id="critical-css">
+        /* 크리티컬 CSS - 즉시 렌더링 필요 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* 색상 시스템 */
+            --primary-50: #E8F5E9;
+            --primary-100: #C8E6C9;
+            --primary-200: #A5D6A7;
+            --primary-300: #81C784;
+            --primary-400: #66BB6A;
+            --primary-500: #4CAF50;
+            --primary-600: #43A047;
+            --primary-700: #388E3C;
+            --primary-800: #2E7D32;
+            --primary-900: #1B5E20;
+            
+            /* 통계 유의성 색상 */
+            --stat-highly-significant: #B71C1C;
+            --stat-very-significant: #D32F2F;
+            --stat-significant: #F57C00;
+            --stat-marginal: #FFA726;
+            --stat-not-significant: #66BB6A;
+            
+            /* 중립 색상 */
+            --gray-50: #FAFAFA;
+            --gray-100: #F5F5F5;
+            --gray-200: #EEEEEE;
+            --gray-300: #E0E0E0;
+            --gray-400: #BDBDBD;
+            --gray-500: #9E9E9E;
+            --gray-600: #757575;
+            --gray-700: #616161;
+            --gray-800: #424242;
+            --gray-900: #212121;
+            
+            /* 스페이싱 */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+            
+            /* 그라디언트 */
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--gray-900);
+        }
+        
+        /* 로딩 화면 */
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--gradient-primary);
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .loading-logo {
+            font-size: 64px;
+            text-align: center;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .loading-title {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .loading-subtitle {
+            font-size: 14px;
+            color: var(--gray-600);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .loading-progress {
+            position: relative;
+            height: 6px;
+            background: var(--gray-200);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        
+        .loading-progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .loading-status {
+            font-size: 12px;
+            color: var(--gray-600);
+            text-align: center;
+        }
+        
+        /* 에러 상태 */
+        .loading-error {
+            background: #FFEBEE;
+            color: #C62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+        
+        .retry-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .retry-button:hover {
+            opacity: 0.9;
+        }
+        
+        /* 숨김 클래스 */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* 글라스모피즘 카드 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        
+        /* 버튼 스타일 */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(103, 126, 234, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* 컨테이너 */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 화면 -->
+    <div class="loading-container" id="loadingScreen">
+        <div class="loading-content">
+            <div class="loading-logo">📊</div>
+            <h1 class="loading-title">통계 분석 도구</h1>
+            <p class="loading-subtitle">국립수산과학원</p>
+            <div class="loading-progress">
+                <div class="loading-progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+            <p class="loading-status" id="loadingStatus">Python 환경 준비 중...</p>
+            
+            <!-- 에러 표시 영역 -->
+            <div id="loadingError" class="loading-error hidden">
+                <div id="errorMessage"></div>
+                <button class="retry-button" onclick="retryLoading()">다시 시도</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 메인 앱 (로딩 후 표시) -->
+    <div id="mainApp" class="hidden">
+        <div class="container" style="padding: 2rem 1rem;">
+            <div class="glass-card">
+                <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 24px;">
+                    통계 분석 도구가 준비되었습니다!
+                </h1>
+                
+                <!-- 간단한 테스트 UI -->
+                <div style="margin-bottom: 24px;">
+                    <h2 style="font-size: 18px; margin-bottom: 12px;">테스트 데이터 분석</h2>
+                    <p style="color: var(--gray-600); margin-bottom: 16px;">
+                        아래 버튼을 클릭하여 예제 데이터로 ANOVA 분석을 실행해보세요.
+                    </p>
+                    
+                    <button class="btn btn-primary" id="testButton" onclick="runTestAnalysis()">
+                        테스트 분석 실행
+                    </button>
+                </div>
+                
+                <!-- 결과 표시 영역 -->
+                <div id="testResults" style="display: none;">
+                    <h3 style="font-size: 16px; margin-bottom: 12px;">분석 결과</h3>
+                    <pre id="resultsContent" style="background: var(--gray-50); padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 12px;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pyodide 로더 스크립트 포함 -->
+    <script src="pyodide-loader.js"></script>
+    
+    <!-- 메인 애플리케이션 스크립트 -->
+    <script>
+        // 전역 변수
+        let pyodide = null;
+        
+        // 초기화
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('앱 초기화 시작...');
+            await initializePyodide();
+        });
+        
+        // Pyodide 초기화
+        async function initializePyodide() {
+            try {
+                // Pyodide 로더 초기화
+                pyodide = await window.pyodideLoader.initialize((progress) => {
+                    // 진행 상황 업데이트
+                    document.getElementById('progressBar').style.width = progress.progress + '%';
+                    document.getElementById('loadingStatus').textContent = progress.message;
+                    
+                    // 에러 처리
+                    if (progress.step === 'error') {
+                        showLoadingError(progress.message);
+                    }
+                });
+                
+                // 로딩 완료
+                console.log('✅ Pyodide 로딩 완료');
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('❌ Pyodide 초기화 실패:', error);
+                showLoadingError(`초기화 실패: ${error.message}`);
+            }
+        }
+        
+        // 로딩 에러 표시
+        function showLoadingError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('loadingError').classList.remove('hidden');
+        }
+        
+        // 재시도
+        async function retryLoading() {
+            document.getElementById('loadingError').classList.add('hidden');
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('loadingStatus').textContent = 'Python 환경 준비 중...';
+            await initializePyodide();
+        }
+        
+        // 테스트 분석 실행
+        async function runTestAnalysis() {
+            const button = document.getElementById('testButton');
+            button.disabled = true;
+            button.textContent = '분석 중...';
+            
+            try {
+                // 테스트 데이터
+                const testData = {
+                    groups: [
+                        [23.5, 24.1, 22.9, 24.5, 23.8],  // 그룹 A
+                        [26.8, 27.2, 26.5, 27.0, 26.9],  // 그룹 B
+                        [21.3, 20.9, 21.7, 21.5, 20.8]   // 그룹 C
+                    ],
+                    labels: ['그룹 A', '그룹 B', '그룹 C']
+                };
+                
+                console.log('테스트 데이터:', testData);
+                
+                // 분석 실행
+                const results = await window.pyodideLoader.runAnalysis(testData);
+                
+                console.log('분석 결과:', results);
+                
+                // 결과 표시
+                document.getElementById('resultsContent').textContent = 
+                    JSON.stringify(results, null, 2);
+                document.getElementById('testResults').style.display = 'block';
+                
+                // 결과 요약
+                if (results.main_test) {
+                    const test = results.main_test;
+                    alert(`
+분석 완료!
+
+검정 방법: ${test.test_type}
+F-통계량: ${test.statistic.toFixed(4)}
+p-value: ${test.p_value.toFixed(6)}
+결과: ${test.significant ? '유의미한 차이 있음' : '유의미한 차이 없음'}
+효과 크기: ${test.effect_magnitude || 'N/A'}
+                    `.trim());
+                }
+                
+            } catch (error) {
+                console.error('분석 실행 오류:', error);
+                alert('분석 중 오류가 발생했습니다: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = '테스트 분석 실행';
+            }
+        }
+        
+        // 메모리 정리 (주기적으로 실행)
+        setInterval(async () => {
+            if (window.pyodideLoader && window.pyodideLoader.isReady) {
+                await window.pyodideLoader.cleanup();
+                console.log('메모리 정리 실행');
+            }
+        }, 60000); // 1분마다
+    </script>
+    
+    <!-- Pyodide 로더 스크립트 -->
+    <script src="pyodide-loader.js"></script>
+    <script src="data-parser.js"></script>
+    
+    <!-- 통합 애플리케이션 코드 -->
+    <script>
+        // 전역 앱 상태
+        const AppState = {
+            pyodideReady: false,
+            currentData: null,
+            analysisResults: null,
+            isAnalyzing: false
+        };
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('앱 초기화 시작...');
+            
+            // UI 이벤트 리스너 설정
+            setupEventListeners();
+            
+            // Pyodide 로드
+            await initializePyodide();
+            
+            // 샘플 데이터 버튼 활성화
+            enableSampleDataButtons();
+        });
+        
+        // Pyodide 초기화
+        async function initializePyodide() {
+            const statusEl = document.getElementById('pyodide-status');
+            
+            try {
+                statusEl.textContent = 'Python 환경을 준비하는 중...';
+                
+                // pyodide-loader.js의 초기화 함수 호출
+                await window.initPyodide();
+                
+                // 통계 엔진 코드 로드
+                const statsEngineCode = await fetch('statistics-engine.py').then(r => r.text());
+                window.pyodide.runPython(statsEngineCode);
+                
+                AppState.pyodideReady = true;
+                statusEl.textContent = '준비 완료!';
+                statusEl.classList.add('text-green-600');
+                
+                // 분석 버튼 활성화
+                document.getElementById('analyze-btn').disabled = false;
+                
+            } catch (error) {
+                console.error('Pyodide 초기화 실패:', error);
+                statusEl.textContent = '초기화 실패 - 페이지를 새로고침 해주세요';
+                statusEl.classList.add('text-red-600');
+            }
+        }
+        
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            // 데이터 입력 영역
+            const dataInput = document.getElementById('data-input');
+            
+            // 붙여넣기 이벤트
+            dataInput.addEventListener('paste', handlePaste);
+            
+            // 드래그 앤 드롭
+            dataInput.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dataInput.classList.add('border-primary-500', 'bg-primary-50');
+            });
+            
+            dataInput.addEventListener('dragleave', () => {
+                dataInput.classList.remove('border-primary-500', 'bg-primary-50');
+            });
+            
+            dataInput.addEventListener('drop', handleDrop);
+            
+            // 분석 버튼
+            document.getElementById('analyze-btn').addEventListener('click', performAnalysis);
+            
+            // 초기화 버튼
+            document.getElementById('clear-btn').addEventListener('click', clearAll);
+            
+            // 탭 전환
+            document.querySelectorAll('[data-tab]').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+        }
+        
+        // 붙여넣기 처리
+        async function handlePaste(event) {
+            event.preventDefault();
+            const text = event.clipboardData.getData('text');
+            document.getElementById('data-input').value = text;
+            
+            // 자동 파싱 시도
+            await parseData();
+        }
+        
+        // 드롭 처리
+        async function handleDrop(event) {
+            event.preventDefault();
+            const dataInput = document.getElementById('data-input');
+            dataInput.classList.remove('border-primary-500', 'bg-primary-50');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const text = await file.text();
+                dataInput.value = text;
+                await parseData();
+            }
+        }
+        
+        // 데이터 파싱
+        async function parseData() {
+            const input = document.getElementById('data-input').value;
+            if (!input.trim()) return;
+            
+            const parser = new DataParser();
+            const result = await parser.parse(input);
+            
+            if (result.success) {
+                AppState.currentData = result.data;
+                displayDataPreview(result);
+                updateStatus(`${result.data.groups.length}개 그룹, 총 ${result.data.totalSamples}개 데이터 로드됨`, 'success');
+            } else {
+                updateStatus(result.error, 'error');
+                if (result.suggestion) {
+                    updateStatus(result.suggestion, 'warning');
+                }
+            }
+        }
+        
+        // 통계 분석 수행
+        async function performAnalysis() {
+            if (!AppState.currentData) {
+                updateStatus('먼저 데이터를 입력해주세요', 'error');
+                return;
+            }
+            
+            if (!AppState.pyodideReady) {
+                updateStatus('Python 환경이 아직 준비되지 않았습니다', 'error');
+                return;
+            }
+            
+            if (AppState.isAnalyzing) {
+                return;
+            }
+            
+            AppState.isAnalyzing = true;
+            updateStatus('분석 중...', 'info');
+            document.getElementById('analyze-btn').disabled = true;
+            
+            try {
+                // Python 함수 호출
+                const dataJson = JSON.stringify(AppState.currentData);
+                const resultJson = window.pyodide.runPython(`analyze_data('${dataJson}')`);
+                const result = JSON.parse(resultJson);
+                
+                if (result.success) {
+                    AppState.analysisResults = result;
+                    displayResults(result);
+                    updateStatus('분석 완료!', 'success');
+                    switchTab('results');
+                } else {
+                    updateStatus(`분석 실패: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('분석 오류:', error);
+                updateStatus(`오류: ${error.message}`, 'error');
+            } finally {
+                AppState.isAnalyzing = false;
+                document.getElementById('analyze-btn').disabled = false;
+            }
+        }
+        
+        // 결과 표시
+        function displayResults(results) {
+            // 기술통계 표시
+            displayDescriptiveStats(results.descriptive);
+            
+            // 정규성 검정 결과
+            displayNormalityTest(results.normality);
+            
+            // 등분산성 검정 결과
+            displayHomogeneityTest(results.homogeneity);
+            
+            // 주요 검정 결과
+            displayMainTest(results.test);
+            
+            // 사후분석 결과
+            if (results.post_hoc) {
+                displayPostHoc(results.post_hoc);
+            }
+            
+            // 요약
+            displaySummary(results.summary);
+        }
+        
+        // 기술통계 표시
+        function displayDescriptiveStats(stats) {
+            const container = document.getElementById('descriptive-stats');
+            let html = '<h3 class="text-lg font-semibold mb-3">기술통계</h3>';
+            html += '<div class="overflow-x-auto"><table class="min-w-full">';
+            html += '<thead><tr class="bg-gray-50">';
+            html += '<th class="px-4 py-2">그룹</th>';
+            html += '<th class="px-4 py-2">N</th>';
+            html += '<th class="px-4 py-2">평균</th>';
+            html += '<th class="px-4 py-2">표준편차</th>';
+            html += '<th class="px-4 py-2">95% CI</th>';
+            html += '</tr></thead><tbody>';
+            
+            stats.forEach(stat => {
+                html += `<tr class="border-b">`;
+                html += `<td class="px-4 py-2 font-medium">${stat.label}</td>`;
+                html += `<td class="px-4 py-2 text-center">${stat.n}</td>`;
+                html += `<td class="px-4 py-2 text-center">${stat.mean.toFixed(3)}</td>`;
+                html += `<td class="px-4 py-2 text-center">${stat.std.toFixed(3)}</td>`;
+                html += `<td class="px-4 py-2 text-center">[${stat.ci95_lower.toFixed(3)}, ${stat.ci95_upper.toFixed(3)}]</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+        
+        // 주요 검정 결과 표시
+        function displayMainTest(test) {
+            const container = document.getElementById('main-test-result');
+            const pClass = test.significant ? 'text-red-600 font-bold' : 'text-gray-600';
+            
+            let html = '<h3 class="text-lg font-semibold mb-3">통계 검정 결과</h3>';
+            html += '<div class="bg-gray-50 p-4 rounded">';
+            html += `<p class="mb-2"><strong>검정 방법:</strong> ${test.test_type}</p>`;
+            html += `<p class="mb-2"><strong>검정 통계량:</strong> ${test.statistic.toFixed(4)}</p>`;
+            html += `<p class="mb-2 ${pClass}"><strong>p-value:</strong> ${test.p_value.toFixed(4)}</p>`;
+            html += `<p class="mb-2"><strong>효과 크기:</strong> ${test.effect_size.interpretation}</p>`;
+            html += `<div class="mt-4 p-3 ${test.significant ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'} border rounded">`;
+            html += `<p>${test.interpretation}</p>`;
+            html += '</div></div>';
+            
+            container.innerHTML = html;
+        }
+        
+        // 정규성 검정 결과 표시
+        function displayNormalityTest(normality) {
+            const container = document.getElementById('normality-test');
+            if (!container) return;
+            
+            let html = '<h4 class="font-medium mb-2">정규성 검정</h4>';
+            html += '<ul class="space-y-1 text-sm">';
+            
+            normality.results.forEach(result => {
+                const icon = result.is_normal ? '✓' : '✗';
+                const color = result.is_normal ? 'text-green-600' : 'text-orange-600';
+                html += `<li class="${color}">${icon} ${result.label}: ${result.test} (p=${result.p_value.toFixed(4)})</li>`;
+            });
+            
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+        
+        // 등분산성 검정 결과 표시
+        function displayHomogeneityTest(homogeneity) {
+            const container = document.getElementById('homogeneity-test');
+            if (!container || !homogeneity.results) return;
+            
+            let html = '<h4 class="font-medium mb-2">등분산성 검정</h4>';
+            const levene = homogeneity.results.levene;
+            const icon = homogeneity.equal_variance ? '✓' : '✗';
+            const color = homogeneity.equal_variance ? 'text-green-600' : 'text-orange-600';
+            
+            html += `<p class="text-sm ${color}">${icon} Levene's test: p=${levene.p_value.toFixed(4)}</p>`;
+            html += `<p class="text-xs text-gray-600 mt-1">${levene.interpretation}</p>`;
+            
+            container.innerHTML = html;
+        }
+        
+        // 사후분석 결과 표시
+        function displayPostHoc(postHoc) {
+            const container = document.getElementById('post-hoc-result');
+            if (!container) return;
+            
+            let html = '<h3 class="text-lg font-semibold mb-3">사후분석 결과</h3>';
+            html += `<p class="text-sm text-gray-600 mb-3">방법: ${postHoc.method}</p>`;
+            html += '<div class="overflow-x-auto"><table class="min-w-full text-sm">';
+            html += '<thead><tr class="bg-gray-50">';
+            html += '<th class="px-3 py-2">비교</th>';
+            html += '<th class="px-3 py-2">평균차</th>';
+            html += '<th class="px-3 py-2">p-value</th>';
+            html += '<th class="px-3 py-2">보정 p-value</th>';
+            html += '<th class="px-3 py-2">유의성</th>';
+            html += '</tr></thead><tbody>';
+            
+            postHoc.comparisons.forEach(comp => {
+                const sigClass = comp.significant ? 'font-bold text-red-600' : '';
+                html += `<tr class="border-b">`;
+                html += `<td class="px-3 py-2">${comp.group1} vs ${comp.group2}</td>`;
+                html += `<td class="px-3 py-2 text-center">${comp.mean_diff.toFixed(3)}</td>`;
+                html += `<td class="px-3 py-2 text-center">${comp.p_value.toFixed(4)}</td>`;
+                html += `<td class="px-3 py-2 text-center ${sigClass}">${comp.adjusted_p.toFixed(4)}</td>`;
+                html += `<td class="px-3 py-2 text-center">${comp.significant ? '유의함 *' : 'n.s.'}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }
+        
+        // 요약 표시
+        function displaySummary(summary) {
+            const container = document.getElementById('analysis-summary');
+            if (!container) return;
+            
+            container.innerHTML = `<div class="bg-blue-50 p-4 rounded"><pre class="whitespace-pre-wrap text-sm">${summary}</pre></div>`;
+        }
+        
+        // 데이터 미리보기
+        function displayDataPreview(parseResult) {
+            const container = document.getElementById('data-preview');
+            if (!container) return;
+            
+            let html = '<h4 class="font-medium mb-2">데이터 미리보기</h4>';
+            html += '<div class="bg-gray-50 p-3 rounded text-sm">';
+            
+            parseResult.data.groups.forEach((group, idx) => {
+                const label = parseResult.data.labels[idx];
+                const preview = group.slice(0, 5).map(v => v.toFixed(2)).join(', ');
+                const more = group.length > 5 ? ` ... (${group.length - 5}개 더)` : '';
+                html += `<p class="mb-1"><strong>${label}:</strong> ${preview}${more}</p>`;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // 샘플 데이터 버튼 활성화
+        function enableSampleDataButtons() {
+            document.querySelectorAll('[data-sample]').forEach(btn => {
+                btn.addEventListener('click', () => loadSampleData(btn.dataset.sample));
+            });
+        }
+        
+        // 샘플 데이터 로드
+        function loadSampleData(type) {
+            const parser = new DataParser();
+            const sample = parser.generateSampleData(type);
+            document.getElementById('data-input').value = sample.text;
+            parseData();
+        }
+        
+        // 탭 전환
+        function switchTab(tabName) {
+            document.querySelectorAll('[data-tab]').forEach(tab => {
+                tab.classList.toggle('tab-active', tab.dataset.tab === tabName);
+            });
+            
+            document.querySelectorAll('[data-tab-content]').forEach(content => {
+                content.classList.toggle('hidden', content.dataset.tabContent !== tabName);
+            });
+        }
+        
+        // 전체 초기화
+        function clearAll() {
+            document.getElementById('data-input').value = '';
+            AppState.currentData = null;
+            AppState.analysisResults = null;
+            
+            // 결과 영역 초기화
+            ['descriptive-stats', 'main-test-result', 'normality-test', 
+             'homogeneity-test', 'post-hoc-result', 'analysis-summary', 
+             'data-preview'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '';
+            });
+            
+            updateStatus('초기화되었습니다', 'info');
+            switchTab('input');
+        }
+        
+        // 상태 메시지 업데이트
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status-message');
+            if (!statusEl) return;
+            
+            const colors = {
+                success: 'text-green-600 bg-green-50',
+                error: 'text-red-600 bg-red-50',
+                warning: 'text-orange-600 bg-orange-50',
+                info: 'text-blue-600 bg-blue-50'
+            };
+            
+            statusEl.className = `p-2 rounded text-sm ${colors[type] || colors.info}`;
+            statusEl.textContent = message;
+            
+            // 3초 후 자동 숨김
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusEl.textContent = '';
+                    statusEl.className = '';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>

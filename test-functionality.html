@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>기능 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8">
+    <h1 class="text-2xl mb-4">기능 테스트 페이지</h1>
+    
+    <div class="space-y-4">
+        <div class="bg-blue-50 p-4 rounded">
+            <h2 class="font-bold mb-2">1. 통합된 단계 진행 테스트</h2>
+            <button onclick="testProceedToStep(2)" class="bg-blue-500 text-white px-3 py-1 rounded mr-2">2단계</button>
+            <button onclick="testProceedToStep(3)" class="bg-blue-500 text-white px-3 py-1 rounded mr-2">3단계</button>
+            <button onclick="testProceedToStep(4)" class="bg-blue-500 text-white px-3 py-1 rounded">4단계</button>
+            <div id="stepResult" class="mt-2 text-sm"></div>
+        </div>
+        
+        <div class="bg-green-50 p-4 rounded">
+            <h2 class="font-bold mb-2">2. DOM 유틸리티 함수 테스트</h2>
+            <button onclick="testShowHide()" class="bg-green-500 text-white px-3 py-1 rounded mr-2">표시/숨김</button>
+            <button onclick="testEnableDisable()" class="bg-green-500 text-white px-3 py-1 rounded">활성화/비활성화</button>
+            <div id="testElement" class="mt-2 p-2 bg-yellow-100 rounded hidden">테스트 엘리먼트</div>
+            <button id="testButton" class="mt-2 bg-purple-500 text-white px-3 py-1 rounded">테스트 버튼</button>
+        </div>
+        
+        <div class="bg-red-50 p-4 rounded">
+            <h2 class="font-bold mb-2">3. 파일 관리 테스트</h2>
+            <button onclick="testFileRemoval()" class="bg-red-500 text-white px-3 py-1 rounded mr-2">파일 제거</button>
+            <button onclick="testFileClear()" class="bg-red-500 text-white px-3 py-1 rounded">완전 초기화</button>
+            <div id="fileResult" class="mt-2 text-sm"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 통합된 단계 진행 함수 (메인 파일에서 복사)
+        function proceedToStep(step) {
+            console.log('proceedToStep 호출됨:', step);
+            
+            const stepActions = {
+                2: () => 'validateData 호출됨',
+                3: () => 'testAssumptions 호출됨', 
+                4: () => 'recommendMethod 호출됨',
+                5: () => 'runAnalysis 호출됨'
+            };
+            
+            const action = stepActions[step];
+            return action ? action() : '알 수 없는 단계';
+        }
+        
+        // DOM 유틸리티 함수들 (메인 파일에서 복사)
+        function showElement(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) element.classList.remove('hidden');
+        }
+        
+        function hideElement(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) element.classList.add('hidden');
+        }
+        
+        function enableButton(selector) {
+            const button = document.querySelector(selector);
+            if (button) {
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        function disableButton(selector) {
+            const button = document.querySelector(selector);
+            if (button) {
+                button.disabled = true;
+                button.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        // 파일 관리 함수 (메인 파일에서 복사)
+        function removeFile(resetToStart = false) {
+            let result = '파일 제거됨';
+            if (resetToStart) {
+                result += ' + 완전 초기화됨';
+            }
+            return result;
+        }
+        
+        function clearFileSelection() {
+            return removeFile(true);
+        }
+        
+        // 테스트 함수들
+        function testProceedToStep(step) {
+            const result = proceedToStep(step);
+            document.getElementById('stepResult').innerHTML = `단계 ${step}: ${result}`;
+        }
+        
+        let isVisible = false;
+        function testShowHide() {
+            if (isVisible) {
+                hideElement('testElement');
+                isVisible = false;
+            } else {
+                showElement('testElement');
+                isVisible = true;
+            }
+        }
+        
+        let isEnabled = true;
+        function testEnableDisable() {
+            if (isEnabled) {
+                disableButton('#testButton');
+                isEnabled = false;
+            } else {
+                enableButton('#testButton');
+                isEnabled = true;
+            }
+        }
+        
+        function testFileRemoval() {
+            const result = removeFile(false);
+            document.getElementById('fileResult').innerHTML = result;
+        }
+        
+        function testFileClear() {
+            const result = clearFileSelection();
+            document.getElementById('fileResult').innerHTML = result;
+        }
+        
+        console.log('테스트 페이지 로드 완료');
+    </script>
+</body>
+</html>

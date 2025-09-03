@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>검증 디버그</title>
+    <style>
+        .container { padding: 20px; font-family: Arial, sans-serif; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { padding: 8px 16px; margin: 5px; }
+        .success-box { background: #d4edda; padding: 10px; border-radius: 5px; }
+        .warning-box { background: #fff3cd; padding: 10px; border-radius: 5px; }
+        .info-box { background: #d1ecf1; padding: 10px; border-radius: 5px; }
+        #dataValidation { border: 2px solid #007bff; padding: 10px; min-height: 40px; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>검증 디버그 테스트</h1>
+        
+        <div class="section">
+            <h3>1. 데이터 설정</h3>
+            <button onclick="loadSampleData()">샘플 데이터 로드</button>
+            <button onclick="checkCurrentData()">현재 데이터 확인</button>
+            <div id="dataInfo"></div>
+        </div>
+        
+        <div class="section">
+            <h3>2. 검증 상태 (dataValidation)</h3>
+            <div id="dataValidation">검증 대기중...</div>
+        </div>
+        
+        <div class="section">
+            <h3>3. 검증 테스트</h3>
+            <button onclick="runValidation()">검증 실행</button>
+            <button onclick="testAutoProgress()">자동진행 테스트</button>
+            <div id="validationLog"></div>
+        </div>
+        
+        <div class="section">
+            <h3>4. 콘솔 로그</h3>
+            <div id="consoleLog" style="background: #f0f0f0; padding: 10px; font-family: monospace; height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수 (메인 파일과 동일)
+        let currentData = null;
+        let autoProgress = true; // 테스트용으로 기본값 true
+        let analysisResults = {};
+        let pyodide = null; // Pyodide 없음으로 설정
+        
+        // 콘솔 로그 캡처
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        function logToPage(message, type = 'log') {
+            const logDiv = document.getElementById('consoleLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div style="color: ${type === 'error' ? 'red' : 'black'}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            logToPage(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            logToPage(args.join(' '), 'error');
+        };
+        
+        // 샘플 데이터 로드
+        function loadSampleData() {
+            currentData = {
+                '그룹': ['A', 'A', 'A', 'B', 'B', 'B'],
+                '값': [10, 12, 14, 15, 17, 19]
+            };
+            document.getElementById('dataInfo').innerHTML = 
+                `<pre>${JSON.stringify(currentData, null, 2)}</pre>`;
+            console.log('샘플 데이터 로드됨:', currentData);
+        }
+        
+        function checkCurrentData() {
+            document.getElementById('dataInfo').innerHTML = 
+                `현재 데이터: ${currentData ? 'O' : 'X'}<br>` +
+                `autoProgress: ${autoProgress}<br>` +
+                `pyodide: ${pyodide ? 'O' : 'X'}`;
+        }
+        
+        // 메인 파일의 performBasicValidation 함수 복사 (간소화)
+        function performBasicValidation() {
+            console.log('performBasicValidation 시작됨');
+            if (!currentData) {
+                console.log('currentData가 없음');
+                return;
+            }
+            
+            const columns = Object.keys(currentData);
+            const rows = currentData[columns[0]]?.length || 0;
+            console.log('데이터 구조:', { rows, columns: columns.length });
+            
+            // 간단한 검증 로직
+            let issues = [];
+            let numericColumns = [];
+            let groupColumns = [];
+            
+            for (const col of columns) {
+                const values = currentData[col];
+                const numericValues = values.filter(v => !isNaN(Number(v)) && v !== '');
+                
+                if (numericValues.length > values.length * 0.8) {
+                    numericColumns.push(col);
+                } else {
+                    groupColumns.push(col);
+                }
+            }
+            
+            console.log('변수 분류:', { numericColumns, groupColumns });
+            
+            // 검증 상태 HTML 생성
+            let simpleValidationHtml = '';
+            if (issues.length === 0) {
+                simpleValidationHtml = `
+                    <div class="text-green-600 text-sm">
+                        <div class="font-medium">✅ 품질 검사 통과</div>
+                        <div class="text-xs mt-1">
+                            ${numericColumns.length}개 연속형, ${groupColumns.length}개 그룹형 변수
+                        </div>
+                    </div>
+                `;
+            }
+            
+            console.log('검증 HTML 생성:', simpleValidationHtml);
+            
+            // dataValidation 업데이트
+            const validationElement = document.getElementById('dataValidation');
+            if (validationElement) {
+                validationElement.innerHTML = simpleValidationHtml;
+                console.log('dataValidation 업데이트 성공');
+            } else {
+                console.error('dataValidation 요소를 찾을 수 없음');
+            }
+            
+            // 자동 진행 테스트
+            console.log('자동 진행 체크:', { autoProgress, issues: issues.length });
+            if (autoProgress && issues.length === 0) {
+                console.log('자동 진행 시작 - 3초 후 다음 단계로');
+                
+                const countdownEl = document.createElement('div');
+                countdownEl.style.cssText = 'margin-top: 8px; text-align: center; font-size: 12px; color: #0066cc;';
+                countdownEl.innerHTML = '⏱️ 3초 후 자동으로 다음 단계로 진행됩니다...';
+                
+                const validationElement2 = document.getElementById('dataValidation');
+                if (validationElement2) {
+                    validationElement2.appendChild(countdownEl);
+                    console.log('자동진행 메시지 추가됨');
+                } else {
+                    console.error('dataValidation 요소를 찾을 수 없어 자동 진행 메시지 추가 실패');
+                }
+                
+                setTimeout(() => {
+                    console.log('자동 진행 실행 - proceedToStep3() 호출됨 (시뮬레이션)');
+                    if (countdownEl.parentNode) countdownEl.remove();
+                    document.getElementById('validationLog').innerHTML = '<div class="success-box">✅ 자동 진행 시뮬레이션 완료</div>';
+                }, 3000);
+            }
+        }
+        
+        function runValidation() {
+            console.log('검증 시작');
+            if (!currentData) {
+                loadSampleData();
+            }
+            performBasicValidation();
+        }
+        
+        function testAutoProgress() {
+            autoProgress = !autoProgress;
+            console.log('autoProgress 토글:', autoProgress);
+            document.getElementById('validationLog').innerHTML = `autoProgress = ${autoProgress}`;
+        }
+        
+        // 페이지 로드시
+        console.log('디버그 페이지 로드 완료');
+        checkCurrentData();
+    </script>
+</body>
+</html>

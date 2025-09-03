@@ -1,0 +1,51 @@
+<!-- Step 1: Data Input Component -->
+<div id="step1Content" class="professional-card p-6 step-content">
+    <h3 class="text-xl font-bold mb-4">
+        1단계: 데이터 입력
+        <span class="tooltip-trigger" onmouseover="showTooltip(event, 'Excel, CSV 파일을 업로드하거나 샘플 데이터를 사용해보세요')" onmouseout="hideTooltip()">?</span>
+    </h3>
+    
+    <!-- 드래그 앤 드롭 영역 -->
+    <div id="dropZone" class="drop-zone mb-4">
+        <svg class="mx-auto mb-4" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="8" y="8" width="48" height="48" rx="8" stroke-dasharray="4 4"/>
+            <path d="M32 24v16m-8-8h16" stroke-linecap="round"/>
+        </svg>
+        <p class="text-lg font-medium mb-2">파일을 여기로 드래그하거나 클릭하여 선택</p>
+        <p class="text-sm text-gray-500">Excel (.xlsx, .xls) 또는 CSV (.csv) 파일</p>
+        <p class="text-xs text-gray-400 mt-2">최대 파일 크기: 10MB</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
+    </div>
+    
+    <!-- 파일 미리보기 -->
+    <div id="filePreview" class="hidden mb-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-8 h-8 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-1a1 1 0 100-2h1a4 4 0 014 4v6a4 4 0 01-4 4H6a4 4 0 01-4-4V7a4 4 0 014-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="font-medium" id="fileName">파일명.xlsx</p>
+                        <p class="text-sm text-gray-600" id="fileInfo">크기: 2.3MB | 행: 1,234 | 열: 5</p>
+                    </div>
+                </div>
+                <button onclick="removeFile()" class="text-red-600 hover:text-red-800">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex space-x-4">
+        <button onclick="generateSampleData()" class="btn-secondary">
+            <span class="mr-2">🎲</span> 샘플 데이터 생성
+        </button>
+        <button onclick="proceedToStep2()" class="btn-primary" disabled id="proceedBtn1">
+            다음 단계로 →
+        </button>
+    </div>
+</div>

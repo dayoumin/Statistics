@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계 분석 플랫폼 | 국립수산과학원</title>
+    <meta name="description" content="SciPy 기반 통계 분석 플랫폼">
+    <meta name="build-date" content="2025-09-03 13:32:21">
+    <meta name="version" content="1.0.0">
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    
+    <style>
+/* styles.css */
+/* Main Styles */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+* {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+/* Light Mode (Default) */
+:root {
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-tertiary: #64748b;
+    --border-color: #e0e0e0;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Dark Mode */
+[data-theme='dark'] {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
+    --border-color: #475569;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.professional-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transition: all 0.3s ease;
+}
+
+.professional-card:hover {
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+/* Step Numbers */
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.step-number.inactive {
+    background: #e5e7eb;
+    color: #9ca3af;
+}
+
+.step-number.complete {
+    background: #10b981;
+    animation: checkmark 0.3s ease;
+}
+
+@keyframes checkmark {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Progress Bar */
+.progress-bar {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
+    transition: width 0.5s ease;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.btn-primary:disabled {
+    background: #94a3b8;
+    transform: none;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-secondary {
+    background: white;
+    color: #475569;
+    padding: 12px 24px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+}
+
+/* Message Boxes */
+.result-box {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 16px;
+    animation: slideIn 0.3s ease;
+}
+
+.warning-box {
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.success-box {
+    background: #d1fae5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.error-box {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+/* Drop Zone */
+.drop-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: #fafafa;
+}
+
+.drop-zone:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+}
+
+.drop-zone.dragover {
+    border-color: #3b82f6;
+    background: #dbeafe;
+    transform: scale(1.02);
+}
+
+/* Tooltips */
+.help-tooltip {
+    background: #1e293b;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    position: absolute;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    max-width: 300px;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+}
+
+.tooltip-trigger {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background: #e5e7eb;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 16px;
+    font-size: 11px;
+    cursor: help;
+    margin-left: 4px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-content {
+    opacity: 0;
+    animation: fadeSlideIn 0.4s forwards;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.pulse-once {
+    animation: pulse 1s;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+</style>
+</head>
+<body>
+    <div class="min-h-screen p-4 md:p-8">
+        <!-- header -->
+<!-- Header Component -->
+<header class="max-w-7xl mx-auto mb-8">
+    <div class="professional-card p-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">통계 분석 플랫폼</h1>
+                <p class="text-gray-600 mt-1">국립수산과학원 | National Institute of Fisheries Science</p>
+                <p class="text-xs text-gray-500 mt-1">SciPy.stats 기반 | Python 과학 컴퓨팅 라이브러리</p>
+            </div>
+            <div class="text-right">
+                <button onclick="showHelp()" class="btn-secondary mb-2">
+                    <span class="mr-2">❓</span> 도움말
+                </button>
+                <button onclick="showSampleData()" class="btn-secondary mb-2 ml-2">
+                    <span class="mr-2">📊</span> 샘플로 체험
+                </button>
+                <button onclick="exportProgress()" class="btn-secondary mb-2 ml-2" id="exportBtn" style="display:none;">
+                    <span class="mr-2">💾</span> 진행상황 저장
+                </button>
+            </div>
+        </div>
+        
+        <!-- Pyodide 로딩 상태 -->
+        <div class="mt-4 flex items-center justify-between">
+            <div id="pyodideStatus" class="bg-gray-50 rounded-lg p-4 flex-1">
+                <!-- 로딩 상태 표시 영역 -->
+            </div>
+        </div>
+    </div>
+</header>
+<!-- step1-data-input -->
+<!-- Step 1: Data Input Component -->
+<div id="step1Content" class="professional-card p-6 step-content">
+    <h3 class="text-xl font-bold mb-4">
+        1단계: 데이터 입력
+        <span class="tooltip-trigger" onmouseover="showTooltip(event, 'Excel, CSV 파일을 업로드하거나 샘플 데이터를 사용해보세요')" onmouseout="hideTooltip()">?</span>
+    </h3>
+    
+    <!-- 드래그 앤 드롭 영역 -->
+    <div id="dropZone" class="drop-zone mb-4">
+        <svg class="mx-auto mb-4" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="8" y="8" width="48" height="48" rx="8" stroke-dasharray="4 4"/>
+            <path d="M32 24v16m-8-8h16" stroke-linecap="round"/>
+        </svg>
+        <p class="text-lg font-medium mb-2">파일을 여기로 드래그하거나 클릭하여 선택</p>
+        <p class="text-sm text-gray-500">Excel (.xlsx, .xls) 또는 CSV (.csv) 파일</p>
+        <p class="text-xs text-gray-400 mt-2">최대 파일 크기: 10MB</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
+    </div>
+    
+    <!-- 파일 미리보기 -->
+    <div id="filePreview" class="hidden mb-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-8 h-8 text-blue-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 00-2 2v6a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-1a1 1 0 100-2h1a4 4 0 014 4v6a4 4 0 01-4 4H6a4 4 0 01-4-4V7a4 4 0 014-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="font-medium" id="fileName">파일명.xlsx</p>
+                        <p class="text-sm text-gray-600" id="fileInfo">크기: 2.3MB | 행: 1,234 | 열: 5</p>
+                    </div>
+                </div>
+                <button onclick="removeFile()" class="text-red-600 hover:text-red-800">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex space-x-4">
+        <button onclick="generateSampleData()" class="btn-secondary">
+            <span class="mr-2">🎲</span> 샘플 데이터 생성
+        </button>
+        <button onclick="proceedToStep2()" class="btn-primary" disabled id="proceedBtn1">
+            다음 단계로 →
+        </button>
+    </div>
+</div>
+    </div>
+    
+    <script>
+// data-handler.js
+// Data Handler Module
+// 데이터 입출력 관련 기능
+
+class DataHandler {
+    constructor() {
+        this.currentData = null;
+        this.initializeEventListeners();
+    }
+    
+    initializeEventListeners() {
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        
+        if (dropZone) {
+            dropZone.addEventListener('click', () => fileInput.click());
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.handleFile(files[0]);
+                }
+            });
+        }
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    this.handleFile(e.target.files[0]);
+                }
+            });
+        }
+    }
+    
+    handleFile(file) {
+        // 파일 크기 체크
+        if (file.size > 10 * 1024 * 1024) {
+            alert('파일 크기는 10MB를 초과할 수 없습니다.');
+            return;
+        }
+        
+        // 파일 미리보기 표시
+        document.getElementById('dropZone').classList.add('hidden');
+        document.getElementById('filePreview').classList.remove('hidden');
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileInfo').textContent = `크기: ${(file.size / 1024 / 1024).toFixed(2)}MB | 처리 중...`;
+        
+        // 파일 읽기
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                if (file.name.endsWith('.csv')) {
+                    this.currentData = this.parseCSV(e.target.result);
+                } else {
+                    this.currentData = await this.parseExcel(e.target.result);
+                }
+                
+                const rows = Object.values(this.currentData)[0]?.length || 0;
+                const cols = Object.keys(this.currentData).length;
+                
+                document.getElementById('fileInfo').textContent = 
+                    `크기: ${(file.size / 1024 / 1024).toFixed(2)}MB | 행: ${rows} | 열: ${cols}`;
+                document.getElementById('proceedBtn1').disabled = false;
+                
+                // 이벤트 발생
+                window.dispatchEvent(new CustomEvent('dataLoaded', { detail: this.currentData }));
+                
+            } catch (error) {
+                alert('파일 읽기 중 오류가 발생했습니다: ' + error.message);
+                this.removeFile();
+            }
+        };
+        
+        if (file.name.endsWith('.csv')) {
+            reader.readAsText(file);
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
+    }
+    
+    parseCSV(text) {
+        const lines = text.split('\n').filter(line => line.trim());
+        const headers = lines[0].split(',').map(h => h.trim());
+        const data = {};
+        
+        headers.forEach(header => {
+            data[header] = [];
+        });
+        
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            headers.forEach((header, index) => {
+                const value = values[index]?.trim();
+                data[header].push(isNaN(value) ? value : parseFloat(value));
+            });
+        }
+        
+        return data;
+    }
+    
+    async parseExcel(buffer) {
+        if (typeof XLSX === 'undefined') {
+            throw new Error('Excel 라이브러리가 로드되지 않았습니다');
+        }
+        
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        
+        if (jsonData.length === 0) {
+            throw new Error('빈 파일입니다');
+        }
+        
+        const headers = jsonData[0];
+        const data = {};
+        
+        headers.forEach(header => {
+            data[header] = [];
+        });
+        
+        for (let i = 1; i < jsonData.length; i++) {
+            headers.forEach((header, index) => {
+                const value = jsonData[i][index];
+                data[header].push(value);
+            });
+        }
+        
+        return data;
+    }
+    
+    generateSampleData() {
+        this.currentData = {
+            '그룹A': [23, 25, 27, 22, 24, 26, 28, 25, 24, 23],
+            '그룹B': [31, 33, 35, 32, 34, 36, 38, 35, 34, 33],
+            '그룹C': [42, 44, 46, 43, 45, 47, 49, 46, 45, 44]
+        };
+        
+        // UI 업데이트
+        document.getElementById('dropZone').classList.add('hidden');
+        document.getElementById('filePreview').classList.remove('hidden');
+        document.getElementById('fileName').textContent = '샘플 데이터';
+        document.getElementById('fileInfo').textContent = '3개 그룹 | 각 10개 관측치';
+        document.getElementById('proceedBtn1').disabled = false;
+        
+        // 이벤트 발생
+        window.dispatchEvent(new CustomEvent('dataLoaded', { detail: this.currentData }));
+        
+        return this.currentData;
+    }
+    
+    removeFile() {
+        document.getElementById('dropZone').classList.remove('hidden');
+        document.getElementById('filePreview').classList.add('hidden');
+        document.getElementById('fileInput').value = '';
+        this.currentData = null;
+        document.getElementById('proceedBtn1').disabled = true;
+    }
+    
+    exportData(data, filename = 'data.json') {
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+}
+
+// 전역 함수로 노출 (HTML onclick에서 사용)
+window.dataHandler = new DataHandler();
+window.generateSampleData = () => window.dataHandler.generateSampleData();
+window.removeFile = () => window.dataHandler.removeFile();
+// statistics-engine.js
+// Statistics Engine Module
+// 통계 분석 엔진 래퍼
+
+class StatisticsEngine {
+    constructor() {
+        this.pyodide = null;
+        this.isReady = false;
+    }
+    
+    async initialize() {
+        const stages = ['stage1', 'stage2', 'stage3', 'stage4'];
+        
+        try {
+            // Pyodide 로드
+            this.updateStatus('Python 환경 초기화 중...', 0);
+            this.pyodide = await loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+            });
+            
+            // NumPy 로드
+            this.updateStatus('NumPy 라이브러리 로딩 중...', 25);
+            await this.pyodide.loadPackage(['numpy']);
+            
+            // SciPy 로드
+            this.updateStatus('SciPy.stats 모듈 로딩 중...', 50);
+            await this.pyodide.loadPackage(['scipy']);
+            
+            // 통계 함수 정의
+            this.updateStatus('통계 엔진 준비 중...', 75);
+            await this.definePythonFunctions();
+            
+            this.updateStatus('✅ 통계 엔진 준비 완료!', 100);
+            this.isReady = true;
+            
+            return true;
+        } catch (error) {
+            console.error('Pyodide 초기화 실패:', error);
+            this.updateStatus('❌ 통계 엔진 로딩 실패', 0, true);
+            return false;
+        }
+    }
+    
+    updateStatus(message, percent, isError = false) {
+        const statusEl = document.getElementById('pyodideStatus');
+        if (statusEl) {
+            if (isError) {
+                statusEl.innerHTML = `
+                    <div class="text-red-600">
+                        <p>${message}</p>
+                        <button onclick="location.reload()" class="btn-secondary text-sm mt-2">
+                            새로고침하여 다시 시도
+                        </button>
+                    </div>
+                `;
+            } else {
+                statusEl.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="loading-spinner mr-3"></div>
+                        <span>${message}</span>
+                    </div>
+                    <div class="progress-bar mt-2">
+                        <div class="progress-fill" style="width: ${percent}%"></div>
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    async definePythonFunctions() {
+        await this.pyodide.runPythonAsync(`
+            import numpy as np
+            from scipy import stats
+            import json
+            
+            def validate_data(data):
+                """데이터 검증"""
+                issues = []
+                valid = True
+                
+                for col, values in data.items():
+                    # 결측치 확인
+                    null_count = sum(1 for v in values if v is None or (isinstance(v, str) and v.strip() == ''))
+                    if null_count > 0:
+                        issues.append(f"{col}: {null_count}개 결측치 발견")
+                    
+                    # 숫자 데이터 확인
+                    numeric_values = []
+                    for v in values:
+                        if v is not None and str(v).strip() != '':
+                            try:
+                                numeric_values.append(float(v))
+                            except:
+                                pass
+                    
+                    if len(numeric_values) < len(values) * 0.5:
+                        issues.append(f"{col}: 숫자가 아닌 데이터가 50% 이상")
+                        valid = False
+                
+                return json.dumps({
+                    'valid': valid,
+                    'issues': issues
+                })
+            
+            def test_assumptions(data):
+                """통계적 가정 검정"""
+                results = {
+                    'normality': {},
+                    'homogeneity': None
+                }
+                
+                # 정규성 검정
+                for col, values in data.items():
+                    numeric_values = [float(v) for v in values if v is not None]
+                    if len(numeric_values) > 3:
+                        statistic, p_value = stats.shapiro(numeric_values)
+                        results['normality'][col] = {
+                            'statistic': float(statistic),
+                            'p_value': float(p_value),
+                            'is_normal': bool(p_value > 0.05)
+                        }
+                
+                # 등분산성 검정 (그룹이 2개 이상일 때)
+                if len(data) >= 2:
+                    groups = [
+                        [float(v) for v in values if v is not None]
+                        for values in data.values()
+                    ]
+                    statistic, p_value = stats.levene(*groups)
+                    results['homogeneity'] = {
+                        'statistic': float(statistic),
+                        'p_value': float(p_value),
+                        'is_homogeneous': bool(p_value > 0.05)
+                    }
+                
+                return json.dumps(results)
+            
+            def perform_analysis(data, method='auto'):
+                """통계 분석 수행"""
+                groups = [
+                    [float(v) for v in values if v is not None]
+                    for values in data.values()
+                ]
+                
+                result = {
+                    'method': method,
+                    'groups': len(groups)
+                }
+                
+                if len(groups) == 2:
+                    # t-test
+                    statistic, p_value = stats.ttest_ind(groups[0], groups[1])
+                    result['test'] = 't-test'
+                    result['statistic'] = float(statistic)
+                    result['p_value'] = float(p_value)
+                elif len(groups) > 2:
+                    # ANOVA
+                    statistic, p_value = stats.f_oneway(*groups)
+                    result['test'] = 'ANOVA'
+                    result['statistic'] = float(statistic)
+                    result['p_value'] = float(p_value)
+                
+                # 기술통계
+                result['descriptive'] = {}
+                for name, values in data.items():
+                    numeric_values = [float(v) for v in values if v is not None]
+                    if numeric_values:
+                        result['descriptive'][name] = {
+                            'mean': float(np.mean(numeric_values)),
+                            'std': float(np.std(numeric_values)),
+                            'min': float(np.min(numeric_values)),
+                            'max': float(np.max(numeric_values)),
+                            'n': len(numeric_values)
+                        }
+                
+                return json.dumps(result)
+            
+            print("통계 엔진 준비 완료")
+        `);
+    }
+    
+    async validateData(data) {
+        if (!this.isReady) throw new Error('통계 엔진이 준비되지 않았습니다');
+        const result = await this.pyodide.runPythonAsync(`validate_data(${JSON.stringify(data)})`);
+        return JSON.parse(result);
+    }
+    
+    async testAssumptions(data) {
+        if (!this.isReady) throw new Error('통계 엔진이 준비되지 않았습니다');
+        const result = await this.pyodide.runPythonAsync(`test_assumptions(${JSON.stringify(data)})`);
+        return JSON.parse(result);
+    }
+    
+    async performAnalysis(data, method = 'auto') {
+        if (!this.isReady) throw new Error('통계 엔진이 준비되지 않았습니다');
+        const result = await this.pyodide.runPythonAsync(`perform_analysis(${JSON.stringify(data)}, '${method}')`);
+        return JSON.parse(result);
+    }
+}
+</script>
+</body>
+</html>

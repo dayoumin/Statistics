@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통계 분석 플랫폼 | 국립수산과학원</title>
+    <meta name="description" content="SciPy.stats 기반 오프라인 통계 분석 플랫폼">
+    <meta name="build-date" content="{{BUILD_DATE}}">
+    <meta name="version" content="{{VERSION}}">
+    
+    <!-- External Libraries (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- Custom Styles -->
+    <!-- {{STYLES}} -->
+</head>
+<body>
+    <!-- Dark Mode Toggle -->
+    <button id="darkModeToggle" class="fixed top-4 right-4 z-50 p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="다크 모드 전환">
+        <svg id="sunIcon" class="w-6 h-6 text-yellow-500 hidden" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+        </svg>
+        <svg id="moonIcon" class="w-6 h-6 text-gray-700 dark:text-gray-200" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+        </svg>
+    </button>
+
+    <!-- Welcome Modal (First Visit) -->
+    <div id="welcomeTour" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 max-w-md mx-4">
+            <h2 class="text-xl font-bold mb-4">통계 분석 플랫폼에 오신 것을 환영합니다!</h2>
+            <p class="text-gray-600 mb-6">
+                이 플랫폼은 복잡한 통계 분석을 6단계로 간단하게 진행할 수 있도록 도와드립니다.
+                통계 지식이 없어도 자동으로 최적의 분석 방법을 선택해드려요.
+            </p>
+            <div class="flex space-x-3">
+                <button onclick="startTour()" class="btn-primary">
+                    간단한 투어 시작
+                </button>
+                <button onclick="closeTour()" class="btn-secondary">
+                    나중에 하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="min-h-screen p-4 md:p-8">
+        <!-- {{COMPONENTS}} -->
+        
+        <!-- Progress Steps -->
+        <div class="max-w-7xl mx-auto mb-8">
+            <div class="professional-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">분석 진행 단계</h2>
+                    <div class="flex items-center">
+                        <button id="prevStepBtn" onclick="previousStep()" class="btn-secondary text-sm mr-2" disabled>
+                            ← 이전 단계
+                        </button>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="autoProgress" class="auto-progress-checkbox mr-2">
+                            <span class="text-sm text-gray-600">자동 진행</span>
+                            <span class="tooltip-trigger" onmouseover="showTooltip(event, '각 단계가 완료되면 자동으로 다음 단계로 진행합니다')" onmouseout="hideTooltip()">?</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Step Indicators -->
+                <div class="grid grid-cols-6 gap-2">
+                    <div class="text-center">
+                        <div class="step-number" id="step1">1</div>
+                        <p class="text-xs mt-1">데이터 입력</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="step-number inactive" id="step2">2</div>
+                        <p class="text-xs mt-1">데이터 검증</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="step-number inactive" id="step3">3</div>
+                        <p class="text-xs mt-1">가정 검정</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="step-number inactive" id="step4">4</div>
+                        <p class="text-xs mt-1">방법 선택</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="step-number inactive" id="step5">5</div>
+                        <p class="text-xs mt-1">분석 실행</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="step-number inactive" id="step6">6</div>
+                        <p class="text-xs mt-1">결과 해석</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step Contents Container -->
+        <div class="max-w-7xl mx-auto" id="stepContents">
+            <!-- Step contents will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Tooltip Container -->
+    <div id="tooltip" class="help-tooltip hidden"></div>
+
+    <!-- Footer -->
+    <footer class="mt-12 py-6 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="text-center">
+                <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                    <strong>통계 분석 엔진:</strong> SciPy.stats v1.11+ | NumPy v1.24+ | Pyodide v0.24.1
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-500">
+                    이 플랫폼은 오픈소스 과학 컴퓨팅 라이브러리 SciPy의 검증된 통계 알고리즘을 사용합니다.<br>
+                    모든 통계 계산은 SciPy.stats 모듈의 표준 구현을 따르며, 학술 연구에서 널리 사용되는 신뢰할 수 있는 방법론을 적용합니다.
+                </p>
+                <p class="text-xs text-gray-400 dark:text-gray-600 mt-2">
+                    © 2024 국립수산과학원 통계 분석 플랫폼 | BSD 라이선스 기반 오픈소스 활용
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Pyodide Script -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    
+    <!-- Application Scripts -->
+    <!-- {{SCRIPTS}} -->
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!-- Step 2: Data Validation Component -->
+<div id="step2Content" class="professional-card p-6 step-content hidden">
+    <h3 class="text-xl font-bold mb-4">
+        2단계: 데이터 검증
+        <span class="tooltip-trigger" onmouseover="showTooltip(event, '업로드된 데이터의 유효성을 검사합니다')" onmouseout="hideTooltip()">?</span>
+    </h3>
+    
+    <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+            <p class="text-sm font-semibold">데이터 요약</p>
+            <p class="text-xs mt-1">행: <span id="rowCount">0</span></p>
+            <p class="text-xs">열: <span id="colCount">0</span></p>
+        </div>
+        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+            <p class="text-sm font-semibold">검증 상태</p>
+            <div id="dataValidation" class="mt-2"></div>
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full border-collapse">
+            <thead id="tableHeader" class="bg-gray-50 dark:bg-gray-800"></thead>
+            <tbody id="tableBody" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+        </table>
+    </div>
+    
+    <button onclick="proceedToStep3()" class="btn-primary mt-4">
+        다음 단계로 →
+    </button>
+</div>
