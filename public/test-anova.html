@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANOVA Test</title>
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            background: #fee;
+            color: red;
+        }
+        .success {
+            background: #efe;
+            color: green;
+        }
+        .log {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #3b82f6;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ANOVA 테스트</h1>
+        
+        <div>
+            <h2>테스트 데이터</h2>
+            <p>3개 그룹 비교 (수산 양식장 생산성 데이터)</p>
+            <ul>
+                <li>Group 1 (양식장 A): [45.2, 47.8, 44.5, 46.3, 45.9, 47.1, 46.5]</li>
+                <li>Group 2 (양식장 B): [52.3, 54.1, 53.7, 55.2, 53.8, 54.6]</li>
+                <li>Group 3 (양식장 C): [48.9, 49.7, 50.2, 49.1, 48.5, 49.3, 50.1]</li>
+            </ul>
+        </div>
+
+        <div>
+            <button onclick="testDirectPython()">1. Python 직접 테스트</button>
+            <button onclick="testPyodideManager()">2. PyodideManager 테스트</button>
+            <button onclick="testFullFlow()">3. 전체 플로우 테스트</button>
+        </div>
+
+        <div id="result" class="result"></div>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script type="module">
+        // 로그 함수
+        window.log = function(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.style.borderColor = type === 'error' ? 'red' : type === 'success' ? 'green' : '#3b82f6';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        };
+
+        // Pyodide 로드
+        let pyodide = null;
+        
+        async function loadPyodide() {
+            log('Pyodide 로딩 시작...');
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
+            document.head.appendChild(script);
+            
+            await new Promise(resolve => {
+                script.onload = resolve;
+            });
+            
+            pyodide = await window.loadPyodide({
+                indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
+            });
+            
+            log('Pyodide 로드 완료');
+            
+            // 패키지 설치
+            log('numpy, scipy 설치 중...');
+            await pyodide.loadPackage(['numpy', 'scipy']);
+            log('패키지 설치 완료', 'success');
+            
+            // 함수 정의
+            await pyodide.runPython(`
+import numpy as np
+import scipy.stats as stats
+import json
+
+def perform_anova(groups):
+    """Perform one-way ANOVA"""
+    groups = [np.array(g) for g in groups]
+    f_stat, p_value = stats.f_oneway(*groups)
+    
+    # 효과 크기 계산
+    grand_mean = np.mean(np.concatenate(groups))
+    ss_between = sum(len(g) * (np.mean(g) - grand_mean)**2 for g in groups)
+    ss_total = sum(np.sum((g - grand_mean)**2) for g in groups)
+    eta_squared = ss_between / ss_total if ss_total > 0 else 0
+    
+    return {
+        'f_statistic': float(f_stat),
+        'p_value': float(p_value),
+        'eta_squared': float(eta_squared),
+        'significant': p_value < 0.05,
+        'group_means': [float(np.mean(g)) for g in groups],
+        'group_stds': [float(np.std(g, ddof=1)) for g in groups]
+    }
+
+print("ANOVA 함수 준비 완료")
+            `);
+            
+            log('Python 함수 정의 완료', 'success');
+            return pyodide;
+        }
+
+        // 1. Python 직접 테스트
+        window.testDirectPython = async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = '테스트 실행 중...';
+            
+            try {
+                if (!pyodide) {
+                    await loadPyodide();
+                }
+                
+                log('Direct Python 테스트 시작');
+                
+                const testData = {
+                    groups: [
+                        [45.2, 47.8, 44.5, 46.3, 45.9, 47.1, 46.5],
+                        [52.3, 54.1, 53.7, 55.2, 53.8, 54.6],
+                        [48.9, 49.7, 50.2, 49.1, 48.5, 49.3, 50.1]
+                    ]
+                };
+                
+                const code = `
+import json
+test_groups = ${JSON.stringify(testData.groups)}
+result = perform_anova(test_groups)
+json.dumps(result, indent=2)
+                `;
+                
+                log('Python 코드 실행 중...');
+                const result = await pyodide.runPython(code);
+                
+                log('결과 받음', 'success');
+                resultDiv.className = 'result success';
+                resultDiv.textContent = 'Direct Python 테스트 성공!\n\n' + result;
+                
+                const parsed = JSON.parse(result);
+                log(`F-statistic: ${parsed.f_statistic.toFixed(4)}`, 'success');
+                log(`P-value: ${parsed.p_value.toFixed(6)}`, 'success');
+                log(`결과: ${parsed.significant ? '유의한 차이 있음' : '유의한 차이 없음'}`, 'success');
+                
+            } catch (error) {
+                log('오류 발생: ' + error.message, 'error');
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        };
+
+        // 2. PyodideManager 시뮬레이션 테스트
+        window.testPyodideManager = async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = '테스트 실행 중...';
+            
+            try {
+                if (!pyodide) {
+                    await loadPyodide();
+                }
+                
+                log('PyodideManager 시뮬레이션 테스트 시작');
+                
+                const testData = {
+                    groups: [
+                        [45.2, 47.8, 44.5, 46.3, 45.9, 47.1, 46.5],
+                        [52.3, 54.1, 53.7, 55.2, 53.8, 54.6],
+                        [48.9, 49.7, 50.2, 49.1, 48.5, 49.3, 50.1]
+                    ]
+                };
+                
+                // PyodideManager의 generateAnalysisCode 시뮬레이션
+                const analysisType = 'one-way-anova';
+                let code;
+                
+                if (analysisType === 'anova' || analysisType === 'one-way-anova') {
+                    code = `
+import json
+result = perform_anova(${JSON.stringify(testData.groups)})
+json.dumps(result)
+`;
+                }
+                
+                log(`분석 타입: ${analysisType}`);
+                log('생성된 코드: ' + code);
+                
+                const result = await pyodide.runPython(code);
+                const parsed = JSON.parse(result);
+                
+                log('결과 파싱 성공', 'success');
+                resultDiv.className = 'result success';
+                resultDiv.textContent = 'PyodideManager 시뮬레이션 테스트 성공!\n\n' + JSON.stringify(parsed, null, 2);
+                
+                log(`F-statistic: ${parsed.f_statistic.toFixed(4)}`, 'success');
+                log(`P-value: ${parsed.p_value.toFixed(6)}`, 'success');
+                
+            } catch (error) {
+                log('오류 발생: ' + error.message, 'error');
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error: ' + error.message + '\n\nStack: ' + error.stack;
+            }
+        };
+
+        // 3. 전체 플로우 테스트
+        window.testFullFlow = async function() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = '테스트 실행 중...';
+            
+            try {
+                log('전체 플로우 테스트 시작');
+                
+                // Next.js 앱의 API 엔드포인트 호출 시뮬레이션
+                log('localhost:3005/statistics 페이지에서 실제 테스트 필요');
+                
+                // 여기서는 fetch로 시뮬레이션
+                const response = await fetch('http://localhost:3005/statistics');
+                log(`페이지 상태: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                resultDiv.className = 'result';
+                resultDiv.textContent = `
+전체 플로우 테스트 준비 완료
+
+다음 단계:
+1. http://localhost:3005/statistics 페이지 열기
+2. CSV 파일 업로드 또는 샘플 데이터 사용
+3. Manual Flow 선택
+4. One-Way ANOVA 선택
+5. 결과 확인
+
+콘솔에서 다음 오류가 없는지 확인:
+- "Unknown analysis type"
+- "No data provided"
+- Python 실행 오류
+                `;
+                
+            } catch (error) {
+                log('오류 발생: ' + error.message, 'error');
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Error: ' + error.message;
+            }
+        };
+
+        // 자동으로 Pyodide 로드
+        window.addEventListener('load', async () => {
+            log('페이지 로드 완료');
+            await loadPyodide();
+        });
+    </script>
+</body>
+</html>

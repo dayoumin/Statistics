@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>플로우 테스트 - 통계 분석 플랫폼</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #5a67d8; }
+        .log {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>통계 분석 플랫폼 - 전체 플로우 테스트</h1>
+        
+        <div class="test-section">
+            <h2>테스트 시나리오</h2>
+            <p>샘플 데이터를 로드하여 Step 1부터 Step 6까지 전체 플로우를 테스트합니다.</p>
+            
+            <button class="btn" onclick="startFullTest()">전체 플로우 테스트 시작</button>
+            <button class="btn" onclick="testStep3()">Step 3 단독 테스트</button>
+            <button class="btn" onclick="testStep5()">Step 5 단독 테스트</button>
+            <button class="btn" onclick="clearLog()">로그 지우기</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>테스트 진행 상황</h2>
+            <div id="stepStatus">
+                <p>Step 1: 데이터 입력 <span id="step1Status" class="status pending">대기</span></p>
+                <p>Step 2: 데이터 검증 <span id="step2Status" class="status pending">대기</span></p>
+                <p>Step 3: 가정 검정 <span id="step3Status" class="status pending">대기</span></p>
+                <p>Step 4: 방법 선택 <span id="step4Status" class="status pending">대기</span></p>
+                <p>Step 5: 분석 실행 <span id="step5Status" class="status pending">대기</span></p>
+                <p>Step 6: 결과 해석 <span id="step6Status" class="status pending">대기</span></p>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>실행 로그</h2>
+            <div class="log" id="testLog">테스트 준비 완료...</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>애플리케이션</h2>
+            <iframe id="appFrame" src="dist/statistical-analysis-platform.html"></iframe>
+        </div>
+    </div>
+    
+    <script>
+        let appWindow;
+        
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('testLog');
+            const time = new Date().toTimeString().split(' ')[0];
+            const prefix = type === 'error' ? '[ERROR]' : type === 'success' ? '[SUCCESS]' : '[INFO]';
+            logEl.textContent += `\n${time} ${prefix} ${message}`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function updateStepStatus(step, status) {
+            const statusEl = document.getElementById(`step${step}Status`);
+            if (statusEl) {
+                statusEl.className = `status ${status}`;
+                statusEl.textContent = status === 'pass' ? '완료' : 
+                                       status === 'fail' ? '실패' : 
+                                       status === 'pending' ? '대기' : '진행중';
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('testLog').textContent = '로그 초기화됨...';
+        }
+        
+        async function startFullTest() {
+            log('=== 전체 플로우 테스트 시작 ===');
+            
+            const frame = document.getElementById('appFrame');
+            appWindow = frame.contentWindow;
+            
+            // 모든 상태 초기화
+            for (let i = 1; i <= 6; i++) {
+                updateStepStatus(i, 'pending');
+            }
+            
+            try {
+                // Step 1: 샘플 데이터 로드
+                log('Step 1: 샘플 데이터 로드');
+                updateStepStatus(1, 'running');
+                
+                if (appWindow.loadSampleData) {
+                    appWindow.loadSampleData('test1');
+                    await waitFor(1000);
+                    
+                    if (appWindow.currentData) {
+                        log('데이터 로드 성공', 'success');
+                        updateStepStatus(1, 'pass');
+                    } else {
+                        throw new Error('데이터 로드 실패');
+                    }
+                } else {
+                    throw new Error('loadSampleData 함수 없음');
+                }
+                
+                // Step 2: 데이터 검증
+                log('Step 2: 데이터 검증');
+                updateStepStatus(2, 'running');
+                
+                appWindow.moveToStep(2);
+                await waitFor(2000);
+                
+                if (appWindow.analysisResults && appWindow.analysisResults.validation) {
+                    log('데이터 검증 완료', 'success');
+                    log(`  - 숫자 컬럼: ${appWindow.analysisResults.validation.numericColumns.join(', ')}`);
+                    log(`  - 그룹 컬럼: ${appWindow.analysisResults.validation.groupColumns.join(', ')}`);
+                    updateStepStatus(2, 'pass');
+                } else {
+                    log('데이터 검증 실패 또는 결과 없음', 'error');
+                    updateStepStatus(2, 'fail');
+                }
+                
+                // Step 3: 가정 검정
+                log('Step 3: 가정 검정');
+                updateStepStatus(3, 'running');
+                
+                appWindow.moveToStep(3);
+                await waitFor(3000);
+                
+                if (appWindow.analysisResults && appWindow.analysisResults.assumptions) {
+                    log('가정 검정 완료', 'success');
+                    const assumptions = appWindow.analysisResults.assumptions;
+                    if (assumptions.normality) {
+                        log(`  - 정규성: ${assumptions.normality.length}개 변수 검정`);
+                    }
+                    if (assumptions.homogeneity) {
+                        log(`  - 등분산성: ${assumptions.homogeneity.length}개 변수 검정`);
+                    }
+                    updateStepStatus(3, 'pass');
+                } else {
+                    log('가정 검정 실패 또는 Pyodide 미로드', 'error');
+                    updateStepStatus(3, 'fail');
+                }
+                
+                // Step 4: 방법 선택
+                log('Step 4: 방법 선택');
+                updateStepStatus(4, 'running');
+                
+                appWindow.moveToStep(4);
+                await waitFor(2000);
+                
+                if (appWindow.analysisResults && appWindow.analysisResults.method) {
+                    log('방법 선택 완료', 'success');
+                    log(`  - 추천 방법: ${appWindow.analysisResults.method.method}`);
+                    log(`  - 이유: ${appWindow.analysisResults.method.reason}`);
+                    updateStepStatus(4, 'pass');
+                } else {
+                    log('방법 선택 실패', 'error');
+                    updateStepStatus(4, 'fail');
+                }
+                
+                // Step 5: 분석 실행
+                log('Step 5: 분석 실행');
+                updateStepStatus(5, 'running');
+                
+                appWindow.moveToStep(5);
+                await waitFor(3000);
+                
+                if (appWindow.analysisResults && (appWindow.analysisResults.statistics || appWindow.analysisResults.final)) {
+                    log('분석 실행 완료', 'success');
+                    updateStepStatus(5, 'pass');
+                } else {
+                    log('분석 실행 실패 또는 결과 없음', 'error');
+                    updateStepStatus(5, 'fail');
+                }
+                
+                // Step 6: 결과 해석
+                log('Step 6: 결과 해석');
+                updateStepStatus(6, 'running');
+                
+                appWindow.moveToStep(6);
+                await waitFor(2000);
+                
+                const resultsDiv = frame.contentDocument.getElementById('finalResults');
+                if (resultsDiv && resultsDiv.innerHTML.trim() !== '') {
+                    log('결과 해석 표시 완료', 'success');
+                    updateStepStatus(6, 'pass');
+                } else {
+                    log('결과 표시 실패', 'error');
+                    updateStepStatus(6, 'fail');
+                }
+                
+                log('=== 테스트 완료 ===', 'success');
+                
+            } catch (error) {
+                log(`테스트 중 오류 발생: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testStep3() {
+            log('=== Step 3 단독 테스트 ===');
+            const frame = document.getElementById('appFrame');
+            appWindow = frame.contentWindow;
+            
+            // 샘플 데이터 로드 후 바로 Step 3 테스트
+            appWindow.loadSampleData('test1');
+            await waitFor(1000);
+            appWindow.moveToStep(2);
+            await waitFor(2000);
+            appWindow.moveToStep(3);
+            
+            log('가정 검정 함수 호출 확인...');
+            if (appWindow.testAssumptions) {
+                log('testAssumptions 함수 존재', 'success');
+                appWindow.testAssumptions();
+            } else {
+                log('testAssumptions 함수 없음', 'error');
+            }
+        }
+        
+        async function testStep5() {
+            log('=== Step 5 단독 테스트 ===');
+            const frame = document.getElementById('appFrame');
+            appWindow = frame.contentWindow;
+            
+            log('runAnalysis 함수 확인...');
+            if (appWindow.runAnalysis) {
+                log('runAnalysis 함수 존재', 'success');
+            } else {
+                log('runAnalysis 함수 없음', 'error');
+            }
+            
+            // analysisResults 확인
+            log('analysisResults 확인...');
+            if (appWindow.analysisResults) {
+                log(`  - validation: ${!!appWindow.analysisResults.validation}`);
+                log(`  - assumptions: ${!!appWindow.analysisResults.assumptions}`);
+                log(`  - method: ${!!appWindow.analysisResults.method}`);
+                log(`  - statistics: ${!!appWindow.analysisResults.statistics}`);
+            } else {
+                log('analysisResults 없음', 'error');
+            }
+        }
+        
+        function waitFor(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        window.onload = () => {
+            log('테스트 환경 준비 완료');
+        };
+    </script>
+</body>
+</html>

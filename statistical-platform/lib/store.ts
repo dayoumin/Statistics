@@ -18,15 +18,30 @@ export interface Dataset {
 export interface AnalysisResult {
   id: string
   datasetId: string
+  datasetName: string
   testType: string
   testName: string
+  method: string
   parameters: Record<string, unknown>
-  results: Record<string, unknown>
-  pValue?: number
-  effectSize?: number
-  confidence?: number
+  results: {
+    testStatistic: number
+    pValue: number
+    effectSize: number | null
+    confidenceInterval: [number, number] | null
+    conclusion: string
+    interpretation: string
+    rawOutput?: Record<string, unknown>
+  }
+  assumptions: {
+    normality: { passed: boolean; pValue: number; test: string }[]
+    homogeneity: { passed: boolean; pValue: number; test: string }[]
+    independence: boolean
+  }
+  recommendations: string[]
+  visualizations: string[]
   createdAt: Date
   status: 'running' | 'completed' | 'failed'
+  timestamp: Date
 }
 
 export interface Project {
@@ -68,14 +83,14 @@ interface AppState {
   preferences: UserPreferences
   
   // Actions
-  addDataset: (dataset: Omit<Dataset, 'id' | 'uploadedAt'>) => void
+  addDataset: (dataset: Omit<Dataset, 'id' | 'uploadedAt'>) => Dataset
   updateDataset: (id: string, updates: Partial<Dataset>) => void
   removeDataset: (id: string) => void
   
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateProject: (id: string, updates: Partial<Project>) => void
   
-  addAnalysisResult: (result: Omit<AnalysisResult, 'id' | 'createdAt'>) => void
+  addAnalysisResult: (result: Omit<AnalysisResult, 'id' | 'createdAt'>) => string
   updateAnalysisResult: (id: string, updates: Partial<AnalysisResult>) => void
   
   setLoading: (loading: boolean) => void
@@ -88,8 +103,11 @@ interface AppState {
   getDatasetById: (id: string) => Dataset | undefined
   getProjectById: (id: string) => Project | undefined
   getAnalysisResultById: (id: string) => AnalysisResult | undefined
+  getAnalysisResult: (id: string) => AnalysisResult | undefined
   getActiveDatasets: () => Dataset[]
   getRecentAnalyses: (limit?: number) => AnalysisResult[]
+  getAnalysesByDataset: (datasetId: string) => AnalysisResult[]
+  getCompletedAnalyses: () => AnalysisResult[]
 }
 
 export const useAppStore = create<AppState>()(
@@ -117,17 +135,17 @@ export const useAppStore = create<AppState>()(
         },
 
         // Dataset actions
-        addDataset: (dataset) =>
+        addDataset: (dataset) => {
+          const newDataset = {
+            ...dataset,
+            id: crypto.randomUUID(),
+            uploadedAt: new Date(),
+          }
           set((state) => ({
-            datasets: [
-              ...state.datasets,
-              {
-                ...dataset,
-                id: crypto.randomUUID(),
-                uploadedAt: new Date(),
-              },
-            ],
-          })),
+            datasets: [...state.datasets, newDataset],
+          }))
+          return newDataset
+        },
 
         updateDataset: (id, updates) =>
           set((state) => ({
@@ -165,17 +183,18 @@ export const useAppStore = create<AppState>()(
           })),
 
         // Analysis actions
-        addAnalysisResult: (result) =>
+        addAnalysisResult: (result) => {
+          const newId = crypto.randomUUID()
+          const newResult = {
+            ...result,
+            id: newId,
+            createdAt: new Date(),
+          }
           set((state) => ({
-            analysisResults: [
-              ...state.analysisResults,
-              {
-                ...result,
-                id: crypto.randomUUID(),
-                createdAt: new Date(),
-              },
-            ],
-          })),
+            analysisResults: [...state.analysisResults, newResult],
+          }))
+          return newId
+        },
 
         updateAnalysisResult: (id, updates) =>
           set((state) => ({
@@ -211,6 +230,11 @@ export const useAppStore = create<AppState>()(
           return state.analysisResults.find((result) => result.id === id)
         },
 
+        getAnalysisResult: (id) => {
+          const state = get()
+          return state.analysisResults.find((result) => result.id === id)
+        },
+
         getActiveDatasets: () => {
           const state = get()
           return state.datasets.filter((dataset) => dataset.status === 'active')
@@ -221,6 +245,20 @@ export const useAppStore = create<AppState>()(
           return state.analysisResults
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
             .slice(0, limit)
+        },
+
+        getAnalysesByDataset: (datasetId) => {
+          const state = get()
+          return state.analysisResults
+            .filter((result) => result.datasetId === datasetId)
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        },
+
+        getCompletedAnalyses: () => {
+          const state = get()
+          return state.analysisResults
+            .filter((result) => result.status === 'completed')
+            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         },
       }),
       {

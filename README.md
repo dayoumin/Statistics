@@ -3,6 +3,12 @@
 
 오프라인 환경에서 작동하는 단일 HTML 파일 기반 통계 분석 도구입니다.
 
+## 🆕 최신 업데이트 (2025.01.09)
+- ✅ **모듈화 1주차 완료**: 핵심 모듈 분리 (상태, 데이터, 검증)
+- ✅ **테스트 구조 개선**: 15개 파일을 5개 카테고리로 체계화
+- ✅ **Pyodide 통합 개선**: 싱글톤 패턴으로 안정성 향상
+- ✅ **디버그 모드 추가**: 개발/프로덕션 환경 자동 감지
+
 ## 🎯 주요 특징
 
 - **🔌 완전한 오프라인 작동**: 인터넷 연결 불필요
@@ -98,23 +104,121 @@ cd src && python reliability_test.py
 - **메모리**: 4GB RAM
 - **저장공간**: 100MB
 
+## 👨‍💻 개발자 가이드
+
+### 빌드 방법
+```bash
+# 개발 모드 (디버그 활성화)
+python build.py --dev
+
+# 프로덕션 모드 (최적화)
+python build.py
+```
+
+### 디버그 모드
+```javascript
+// URL로 제어
+?debug=true  // 디버그 ON
+?debug=false // 디버그 OFF
+
+// 콘솔에서 제어
+toggleDebugMode()  // 토글
+showDebugInfo()    // 시스템 정보
+```
+
+### 프로젝트 구조
+```
+src/
+├── components/     # HTML 컴포넌트
+├── js/
+│   ├── core/      # 핵심 모듈
+│   │   ├── debug.js           # 디버그 시스템
+│   │   ├── pyodide-manager.js # Pyodide 관리
+│   │   └── app.js             # 메인 앱
+│   ├── state/     # 상태 관리
+│   │   └── analysis-state.js  # 전역 상태
+│   ├── data/      # 데이터 처리
+│   │   ├── loader.js          # 파일 로더
+│   │   └── validation.js      # 데이터 검증
+│   └── statistics/ # 통계 모듈
+├── css/           # 스타일
+└── app-modular.js # 모듈화 엔트리포인트
+
+test/              # 체계화된 테스트
+├── pyodide/       # Pyodide 테스트
+├── integration/   # 통합 테스트
+├── debug/         # 디버그 테스트
+├── unit/          # 단위 테스트
+└── validation/    # 검증 테스트
+```
+
+### 기여 방법
+1. Fork 후 작업
+2. `src/` 폴더에서 수정
+3. `python build.py --dev`로 테스트
+4. Pull Request 제출
+
 ### 권장 사양
 - **메모리**: 8GB RAM
 - **브라우저**: 최신 버전 Chrome
 
 ## 📁 프로젝트 구조
 
+### 모듈화된 개발 구조
 ```
 Statics/
-├── README.md                # 프로젝트 소개 (이 파일)
-├── current.md              # 일일 작업 기록
-├── Statistical_Analysis_WebApp_PRD.md  # 제품 요구사항
-├── Development_Plan.md     # 개발 계획서
-├── TECHNICAL_SPEC.md       # 기술 명세서
-├── TEST_CASES.md          # 테스트 케이스
-└── src/                   # 소스 코드
-    ├── 통계분석도구.html   # 최종 배포 파일
-    └── components/        # 개발용 컴포넌트
+├── README.md                     # 프로젝트 소개 (이 파일)
+├── CLAUDE.md                     # Claude Code 개발 가이드
+├── build.py                      # 모듈 빌드 스크립트
+│
+├── 📝 문서/
+│   ├── Statistical_Analysis_WebApp_PRD.md  # 제품 요구사항
+│   ├── Development_Plan.md      # 개발 계획서
+│   ├── TECHNICAL_SPEC.md        # 기술 명세서
+│   ├── TEST_CASES.md           # 테스트 케이스
+│   └── current.md              # 일일 작업 기록
+│
+├── 🛠️ src/                      # 모듈화된 소스 코드
+│   ├── template.html            # 메인 HTML 템플릿
+│   ├── components/              # HTML 컴포넌트
+│   │   ├── header.html         # 헤더
+│   │   ├── step1-data-input.html        # 데이터 입력
+│   │   ├── step2-data-validation.html   # 데이터 검증
+│   │   ├── step3-assumptions-testing.html # 가정 검정
+│   │   ├── step4-method-selection.html   # 방법 선택
+│   │   ├── step5-analysis-execution.html # 분석 실행
+│   │   └── step6-results-interpretation.html # 결과 해석
+│   ├── js/                      # JavaScript 모듈
+│   │   ├── core/               # 핵심 기능
+│   │   │   ├── app.js         # 앱 초기화 및 전역 상태
+│   │   │   └── navigation.js  # 단계별 네비게이션
+│   │   ├── statistics/         # 통계 모듈
+│   │   │   ├── anova-advanced.js
+│   │   │   └── correlation.js
+│   │   └── fisheries/          # 수산과학 특화
+│   │       ├── cpue-analysis.js
+│   │       └── fisheries-core.js
+│   └── css/                    # 스타일시트
+│       └── styles.css          # 메인 스타일
+│
+├── 📦 dist/                     # 빌드 출력
+│   └── statistical-analysis-platform.html # 통합된 단일 HTML
+│
+└── 🧪 테스트 파일들/
+    ├── test-debug.html          # Pyodide 디버그 테스트
+    ├── test-pyodide.html        # 기본 테스트
+    └── simple-stats.html        # 간단한 통계 테스트
+```
+
+### 빌드 프로세스
+```bash
+# 개발 모드 빌드 (압축 없음, 디버깅 용이)
+python build.py --dev
+
+# 프로덕션 빌드 (최적화 및 압축)
+python build.py
+
+# 빌드된 파일은 dist/ 폴더에 생성됨
 ```
 
 ## 🧪 주요 사용 사례

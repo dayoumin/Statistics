@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANOVA Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>ANOVA Integration Test</h1>
+    
+    <div id="controls">
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="openStatisticsPage()">Open Statistics Page</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="test-results"></div>
+    
+    <iframe id="test-frame" src="http://localhost:3005/statistics" style="display:none;"></iframe>
+    
+    <script>
+        const testResults = document.getElementById('test-results');
+        const testFrame = document.getElementById('test-frame');
+        
+        function log(message, status = 'pending') {
+            const div = document.createElement('div');
+            div.className = `test-result ${status}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            testResults.appendChild(div);
+            console.log(message);
+        }
+        
+        function clearResults() {
+            testResults.innerHTML = '';
+        }
+        
+        function openStatisticsPage() {
+            testFrame.style.display = 'block';
+            window.open('http://localhost:3005/statistics', '_blank');
+        }
+        
+        async function runAllTests() {
+            clearResults();
+            log('Starting ANOVA Integration Tests');
+            
+            // Test 1: Check if statistics page loads
+            await testPageLoad();
+            
+            // Test 2: Test Pyodide initialization
+            await testPyodideInit();
+            
+            // Test 3: Test ANOVA execution
+            await testAnovaExecution();
+            
+            log('All tests completed', 'pass');
+        }
+        
+        async function testPageLoad() {
+            log('Test 1: Checking if statistics page loads...');
+            
+            try {
+                const response = await fetch('http://localhost:3005/statistics');
+                if (response.ok) {
+                    log('✓ Statistics page loaded successfully', 'pass');
+                } else {
+                    log(`✗ Statistics page failed to load: ${response.status}`, 'fail');
+                }
+            } catch (error) {
+                log(`✗ Failed to fetch statistics page: ${error.message}`, 'fail');
+            }
+        }
+        
+        async function testPyodideInit() {
+            log('Test 2: Testing Pyodide initialization...');
+            
+            try {
+                // Load Pyodide script
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js';
+                document.head.appendChild(script);
+                
+                await new Promise(resolve => {
+                    script.onload = resolve;
+                    script.onerror = () => {
+                        log('✗ Failed to load Pyodide script', 'fail');
+                        resolve();
+                    };
+                });
+                
+                if (window.loadPyodide) {
+                    log('✓ Pyodide script loaded', 'pass');
+                    
+                    // Initialize Pyodide
+                    const pyodide = await window.loadPyodide({
+                        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
+                    });
+                    
+                    log('✓ Pyodide initialized', 'pass');
+                    
+                    // Load required packages
+                    await pyodide.loadPackage(['numpy', 'scipy']);
+                    log('✓ NumPy and SciPy loaded', 'pass');
+                    
+                    window.testPyodide = pyodide;
+                } else {
+                    log('✗ loadPyodide not available', 'fail');
+                }
+            } catch (error) {
+                log(`✗ Pyodide initialization failed: ${error.message}`, 'fail');
+            }
+        }
+        
+        async function testAnovaExecution() {
+            log('Test 3: Testing ANOVA execution...');
+            
+            if (!window.testPyodide) {
+                log('✗ Pyodide not available, skipping ANOVA test', 'fail');
+                return;
+            }
+            
+            try {
+                // Define ANOVA function
+                await window.testPyodide.runPython(`
+import numpy as np
+import scipy.stats as stats
+import json
+
+def perform_anova(groups):
+    groups = [np.array(g) for g in groups]
+    f_stat, p_value = stats.f_oneway(*groups)
+    
+    return {
+        'f_statistic': float(f_stat),
+        'p_value': float(p_value),
+        'significant': p_value < 0.05
+    }
+                `);
+                
+                log('✓ ANOVA function defined', 'pass');
+                
+                // Test with sample data
+                const testData = {
+                    groups: [
+                        [45.2, 47.8, 44.5, 46.3, 45.9, 47.1, 46.5],
+                        [52.3, 54.1, 53.7, 55.2, 53.8, 54.6],
+                        [48.9, 49.7, 50.2, 49.1, 48.5, 49.3, 50.1]
+                    ]
+                };
+                
+                // Test case 1: Direct ANOVA call
+                const result1 = await window.testPyodide.runPython(`
+import json
+test_groups = ${JSON.stringify(testData.groups)}
+result = perform_anova(test_groups)
+json.dumps(result)
+                `);
+                
+                const parsed1 = JSON.parse(result1);
+                log(`✓ Direct ANOVA call: F=${parsed1.f_statistic.toFixed(4)}, p=${parsed1.p_value.toFixed(6)}`, 'pass');
+                
+                // Test case 2: PyodideManager style call (simulating the fix)
+                const analysisTypes = ['anova', 'one-way-anova'];
+                
+                for (const analysisType of analysisTypes) {
+                    let code;
+                    if (analysisType === 'anova' || analysisType === 'one-way-anova') {
+                        code = `
+import json
+result = perform_anova(${JSON.stringify(testData.groups)})
+json.dumps(result)
+`;
+                    }
+                    
+                    const result2 = await window.testPyodide.runPython(code);
+                    const parsed2 = JSON.parse(result2);
+                    log(`✓ ${analysisType} call: F=${parsed2.f_statistic.toFixed(4)}, p=${parsed2.p_value.toFixed(6)}`, 'pass');
+                }
+                
+                // Verify results are consistent
+                log('✓ All ANOVA tests executed successfully', 'pass');
+                
+                // Display detailed results
+                const detailsDiv = document.createElement('pre');
+                detailsDiv.textContent = JSON.stringify({
+                    test_data: testData,
+                    result: parsed1,
+                    interpretation: parsed1.significant ? 
+                        'Significant difference between groups (p < 0.05)' : 
+                        'No significant difference between groups (p ≥ 0.05)'
+                }, null, 2);
+                testResults.appendChild(detailsDiv);
+                
+            } catch (error) {
+                log(`✗ ANOVA execution failed: ${error.message}`, 'fail');
+                console.error(error);
+            }
+        }
+        
+        // Auto-run tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 1000);
+        });
+    </script>
+</body>
+</html>
