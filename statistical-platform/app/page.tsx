@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Calculator, Database, FileText } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -26,9 +27,11 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">
-              Get Started
-            </Button>
+            <Link href="/analysis">
+              <Button variant="outline" className="w-full">
+                Get Started
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
@@ -41,9 +44,11 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">
-              Explore
-            </Button>
+            <Link href="/analysis">
+              <Button variant="outline" className="w-full">
+                Explore
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
@@ -56,9 +61,11 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">
-              Upload Data
-            </Button>
+            <Link href="/data">
+              <Button variant="outline" className="w-full">
+                Upload Data
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
@@ -71,9 +78,11 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">
-              View Reports
-            </Button>
+            <Link href="/dashboard">
+              <Button variant="outline" className="w-full">
+                View Reports
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -89,7 +98,9 @@ export default function Home() {
           <li>Review assumptions and results</li>
           <li>Generate comprehensive reports</li>
         </ol>
-        <Button className="mt-4">Start Analysis</Button>
+        <Link href="/analysis">
+          <Button className="mt-4">Start Analysis</Button>
+        </Link>
       </div>
     </div>
   );
