@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calculator, BarChart3, TrendingUp, Zap, Target, Settings } from "lucide-react"
+import { Calculator, BarChart3, TrendingUp, Zap, Target } from "lucide-react"
 
 export default function AnalysisPage() {
   const analysisCategories = [

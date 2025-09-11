@@ -21,12 +21,12 @@ export function Header() {
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4 md:px-6">
-        <Link href="/" className="flex items-center space-x-2">
-          <Calculator className="h-6 w-6" />
+        <Link href="/" className="flex items-center space-x-2" aria-label="Statistical Analysis Platform - Home">
+          <Calculator className="h-6 w-6" aria-hidden="true" />
           <h1 className="text-lg font-semibold">Statistical Analysis Platform</h1>
         </Link>
         <div className="ml-auto flex items-center space-x-4">
-          <nav className="flex items-center space-x-4">
+          <nav className="flex items-center space-x-4" role="navigation" aria-label="Main navigation">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
                 <Button 
@@ -36,6 +36,7 @@ export function Header() {
                     "transition-colors",
                     pathname === item.href && "bg-primary text-primary-foreground"
                   )}
+                  aria-current={pathname === item.href ? "page" : undefined}
                 >
                   {item.label}
                 </Button>

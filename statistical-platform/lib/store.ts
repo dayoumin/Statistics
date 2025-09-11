@@ -12,7 +12,7 @@ export interface Dataset {
   columns: number
   status: 'active' | 'processed' | 'error'
   uploadedAt: Date
-  data?: any[]
+  data?: Record<string, unknown>[]
 }
 
 export interface AnalysisResult {
@@ -20,8 +20,8 @@ export interface AnalysisResult {
   datasetId: string
   testType: string
   testName: string
-  parameters: Record<string, any>
-  results: Record<string, any>
+  parameters: Record<string, unknown>
+  results: Record<string, unknown>
   pValue?: number
   effectSize?: number
   confidence?: number

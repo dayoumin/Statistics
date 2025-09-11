@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { BarChart3, Users, FileText, TrendingUp, Activity, Database, AlertCircle, CheckCircle2 } from "lucide-react"
+import { BarChart3, FileText, TrendingUp, Activity, Database, AlertCircle, CheckCircle2 } from "lucide-react"
 
 export default function DashboardPage() {
   return (
@@ -194,7 +194,7 @@ export default function DashboardPage() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Data Validation Warning</AlertTitle>
               <AlertDescription>
-                The uploaded dataset "market_data.csv" contains missing values that may affect analysis results.
+                The uploaded dataset &quot;market_data.csv&quot; contains missing values that may affect analysis results.
               </AlertDescription>
             </Alert>
           </div>
