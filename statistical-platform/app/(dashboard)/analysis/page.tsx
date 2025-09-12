@@ -12,6 +12,7 @@ import { Calculator, BarChart3, TrendingUp, Zap, Database, Play, HelpCircle, Inf
 import { useAppStore } from "@/lib/store"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import Link from "next/link"
+// import { PowerAnalysisPanel } from "@/components/analysis/power-analysis-panel" // TODO: Implement power analysis
 
 // Heavy components lazy loaded
 const StatisticalAnalysisComponent = lazy(() => 
@@ -248,7 +249,7 @@ export default function AnalysisPage() {
 
       <TooltipProvider>
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             {analysisCategories.map((category, categoryIndex) => (
               <TabsTrigger 
                 key={categoryIndex} 
@@ -259,6 +260,10 @@ export default function AnalysisPage() {
                 {category.title}
               </TabsTrigger>
             ))}
+            <TabsTrigger value="power" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Power Analysis
+            </TabsTrigger>
           </TabsList>
           
           {analysisCategories.map((category, categoryIndex) => (
@@ -400,6 +405,20 @@ export default function AnalysisPage() {
           </Card>
             </TabsContent>
           ))}
+          
+          <TabsContent value="power" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Power Analysis</CardTitle>
+                <CardDescription>
+                  Statistical power analysis will be available in a future update
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </TooltipProvider>
 

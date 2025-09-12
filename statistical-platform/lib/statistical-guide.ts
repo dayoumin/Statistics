@@ -4,8 +4,52 @@
  * 통계 분석 결과에 대한 상세한 해석과 다음 단계 가이드를 제공하는 시스템
  */
 
-import { StatisticalTestResult, CorrelationResult, DescriptiveStatistics, MultipleComparisonsResult } from './statistics'
 import { UserPreferences } from './store'
+
+// Types for statistical results (previously from statistics.ts)
+export interface StatisticalTestResult {
+  testName: string
+  statistic: number
+  pValue: number
+  degreesOfFreedom?: number
+  effectSize?: number
+  confidenceInterval?: [number, number]
+  interpretation: string
+  isSignificant: boolean
+}
+
+export interface CorrelationResult extends StatisticalTestResult {
+  correlation: number
+  rSquared: number
+}
+
+export interface DescriptiveStatistics {
+  mean: number
+  median: number
+  mode: number | number[]
+  std: number
+  variance: number
+  skewness: number
+  kurtosis: number
+  min: number
+  max: number
+  q1: number
+  q3: number
+  iqr: number
+  cv: number
+  sem: number
+}
+
+export interface MultipleComparisonsResult {
+  method: string
+  comparisons: Array<{
+    group1: string
+    group2: string
+    pValue: number
+    adjustedPValue: number
+    significant: boolean
+  }>
+}
 
 // ================================================================================
 // 타입 정의

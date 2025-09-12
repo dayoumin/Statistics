@@ -20,14 +20,14 @@ import {
 } from "lucide-react"
 import { StatisticalGuidanceComponent } from "@/components/analysis/statistical-guidance"
 import { StatisticalGuideSystem, FileNamingSystem } from "@/lib/statistical-guide"
-import { StatisticalTestResult, CorrelationResult } from "@/lib/statistics"
+// import { StatisticalTestResult, CorrelationResult } from "@/lib/statistics"
 import { useState } from "react"
 
 export default function HelpPage() {
   const [currentDemo, setCurrentDemo] = useState<'ttest' | 'correlation'>('ttest')
 
   // 샘플 t-검정 결과
-  const sampleTTestResult: StatisticalTestResult = {
+  const sampleTTestResult = {
     testName: "독립표본 t-검정",
     testStatistic: 2.45,
     pValue: 0.016,
@@ -53,7 +53,7 @@ export default function HelpPage() {
   }
 
   // 샘플 상관분석 결과
-  const sampleCorrelationResult: CorrelationResult = {
+  const sampleCorrelationResult = {
     correlation: 0.72,
     pValue: 0.001,
     confidenceInterval: [0.45, 0.87],

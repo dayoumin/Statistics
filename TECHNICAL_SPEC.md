@@ -1,834 +1,875 @@
 # 기술 명세서 (Technical Specification)
-**프로젝트**: 수산과학원 통계분석 도구  
-**버전**: 1.0  
-**작성일**: 2025-01-03
+**프로젝트**: 전문가급 통계 분석 플랫폼  
+**버전**: 2.0  
+**작성일**: 2025-09-12  
+**기술 스택**: Next.js 15 + TypeScript + shadcn/ui + Pyodide
 
 ---
 
-## 1. 아키텍처 개요
+## 1. 시스템 아키텍처
 
-### 1.1 시스템 구조
+### 1.1 기술 스택 구성
 ```
-┌──────────────────────────────────────┐
-│         HTML Container               │
-├──────────────────────────────────────┤
-│    JavaScript Control Layer          │
-├──────────────────────────────────────┤
-│        Pyodide Runtime               │
-│    (Python in WebAssembly)           │
-├──────────────────────────────────────┤
-│     Statistical Engine               │
-│      (scipy.stats)                   │
-├──────────────────────────────────────┤
-│    Visualization Layer               │
-│       (Chart.js)                     │
-└──────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│      Next.js 15 App Router          │
+│         (React 19 기반)              │
+├─────────────────────────────────────┤
+│    TypeScript + Tailwind CSS        │
+│        + shadcn/ui                  │
+├─────────────────────────────────────┤
+│        Pyodide Runtime              │
+│    (Python 3.11 in WASM)            │
+├─────────────────────────────────────┤
+│     Statistical Engine              │
+│  (SciPy + NumPy + Pandas)           │
+├─────────────────────────────────────┤
+│    Visualization Layer              │
+│        (Recharts)                   │
+└─────────────────────────────────────┘
 ```
 
 ### 1.2 데이터 플로우
 ```
-사용자 입력 → JS 파싱 → Python 전송 → 통계 계산 → JS 반환 → 시각화 → 사용자
+사용자 입력 → React Form → Validation → Pyodide Worker → 
+통계 계산 → Type-safe Response → UI Update → 시각화
 ```
 
 ---
 
 ## 2. 핵심 컴포넌트 명세
 
-### 2.1 Pyodide 초기화
-```javascript
-class PyodideManager {
-    constructor() {
-        this.pyodide = null;
-        this.isReady = false;
+### 2.1 Pyodide Manager (싱글톤 패턴)
+```typescript
+// lib/pyodide/manager.ts
+export class PyodideManager {
+  private static instance: PyodideManager | null = null
+  private pyodide: any = null
+  private isLoading = false
+  private loadPromise: Promise<void> | null = null
+
+  static getInstance(): PyodideManager {
+    if (!PyodideManager.instance) {
+      PyodideManager.instance = new PyodideManager()
     }
+    return PyodideManager.instance
+  }
+
+  async initialize(): Promise<void> {
+    if (this.pyodide) return
+    if (this.isLoading && this.loadPromise) {
+      return this.loadPromise
+    }
+
+    this.isLoading = true
+    this.loadPromise = this.loadPyodide()
     
-    async initialize() {
-        // Pyodide 로드 (Base64 인코딩된 WASM)
-        this.pyodide = await loadPyodide({
-            indexURL: "data:application/octet-stream;base64,..."
-        });
-        
-        // 필수 패키지 로드
-        await this.pyodide.loadPackage(['numpy', 'scipy', 'pandas']);
-        
-        // 통계 함수 정의
-        await this.pyodide.runPythonAsync(`
-            import numpy as np
-            import scipy.stats as stats
-            import pandas as pd
-            import json
-            
-            # 전역 함수 정의
-            ${STATISTICAL_FUNCTIONS}
-        `);
-        
-        this.isReady = true;
+    try {
+      await this.loadPromise
+    } finally {
+      this.isLoading = false
     }
+  }
+
+  private async loadPyodide(): Promise<void> {
+    const pyodide = await (window as any).loadPyodide({
+      indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
+    })
+    
+    await pyodide.loadPackage(['numpy', 'scipy', 'pandas'])
+    
+    // 통계 함수 초기화
+    await pyodide.runPythonAsync(`
+      import numpy as np
+      import scipy.stats as stats
+      import pandas as pd
+      import json
+      
+      def run_statistical_test(test_type, data, options=None):
+          """통합 통계 테스트 실행기"""
+          # 구현 코드...
+    `)
+    
+    this.pyodide = pyodide
+  }
+
+  async runPython(code: string): Promise<any> {
+    if (!this.pyodide) {
+      await this.initialize()
+    }
+    return this.pyodide.runPythonAsync(code)
+  }
 }
 ```
 
-### 2.2 데이터 파서
-```javascript
-class DataParser {
-    /**
-     * TSV/CSV 문자열을 그룹별 배열로 변환
-     * @param {string} input - 복사된 데이터
-     * @returns {Object} { groups: Array<Array<number>>, labels: Array<string> }
-     */
-    static parseTabularData(input) {
-        const lines = input.trim().split('\n');
-        const delimiter = this.detectDelimiter(input);
-        
-        // 헤더 확인
-        const hasHeader = this.hasHeader(lines[0], delimiter);
-        const startRow = hasHeader ? 1 : 0;
-        
-        // 그룹 컬럼 자동 감지
-        const groupCol = this.detectGroupColumn(lines, delimiter);
-        
-        // 데이터 파싱
-        const groups = {};
-        for (let i = startRow; i < lines.length; i++) {
-            const cols = lines[i].split(delimiter);
-            const group = cols[groupCol.index];
-            const value = parseFloat(cols[groupCol.valueIndex]);
-            
-            if (!groups[group]) groups[group] = [];
-            groups[group].push(value);
-        }
-        
-        return {
-            groups: Object.values(groups),
-            labels: Object.keys(groups)
-        };
+### 2.2 통계 분석 타입 정의
+```typescript
+// lib/statistics.ts
+
+// 기술통계 결과
+export interface DescriptiveStatistics {
+  count: number
+  mean: number
+  median: number
+  mode: number | null
+  standardDeviation: number
+  variance: number
+  range: number
+  min: number
+  max: number
+  q1: number
+  q3: number
+  iqr: number
+  skewness: number
+  kurtosis: number
+  coefficientOfVariation: number
+}
+
+// t-검정 결과
+export interface TTestResult {
+  testType: 'one-sample' | 'independent' | 'paired'
+  statistic: number
+  pValue: number
+  degreesOfFreedom: number
+  confidenceInterval: [number, number]
+  effectSize: {
+    cohensD: number
+    interpretation: string
+  }
+  powerAnalysis: {
+    achievedPower: number
+    requiredSampleSize: number
+  }
+  assumptions: AssumptionCheck[]
+  conclusion: string
+}
+
+// ANOVA 결과
+export interface AnovaResult {
+  type: 'one-way' | 'two-way' | 'repeated-measures'
+  fStatistic: number
+  pValue: number
+  dfBetween: number
+  dfWithin: number
+  msBetween: number
+  msWithin: number
+  effectSize: {
+    etaSquared: number
+    partialEtaSquared: number
+    omegaSquared: number
+  }
+  postHoc?: PostHocResult[]
+  assumptions: AssumptionCheck[]
+}
+
+// 가정 검정
+export interface AssumptionCheck {
+  name: string
+  met: boolean
+  description: string
+  testStatistic?: number
+  pValue?: number
+  visualization?: string // base64 encoded plot
+}
+```
+
+### 2.3 데이터 처리 시스템
+```typescript
+// lib/data/handler.ts
+
+export class DataHandler {
+  private data: DataFrame | null = null
+  private metadata: DataMetadata
+
+  constructor() {
+    this.metadata = {
+      fileName: '',
+      fileSize: 0,
+      rowCount: 0,
+      columnCount: 0,
+      columns: [],
+      dataTypes: {},
+      missingValues: {}
+    }
+  }
+
+  async parseCSV(file: File): Promise<DataFrame> {
+    const text = await file.text()
+    const lines = text.trim().split('\n')
+    const delimiter = this.detectDelimiter(text)
+    
+    // Papa Parse 또는 자체 파서 사용
+    const parsed = this.parseWithDelimiter(lines, delimiter)
+    
+    // 데이터 검증
+    this.validateData(parsed)
+    
+    // 메타데이터 추출
+    this.extractMetadata(parsed)
+    
+    this.data = parsed
+    return parsed
+  }
+
+  private detectDelimiter(text: string): string {
+    const delimiters = [',', '\t', ';', '|']
+    const counts = delimiters.map(d => ({
+      delimiter: d,
+      count: (text.match(new RegExp(d, 'g')) || []).length
+    }))
+    
+    return counts.sort((a, b) => b.count - a.count)[0].delimiter
+  }
+
+  private validateData(data: DataFrame): void {
+    // 데이터 타입 검증
+    // 결측치 확인
+    // 이상치 탐지
+    // 데이터 일관성 검사
+  }
+
+  transformData(transformations: DataTransformation[]): DataFrame {
+    let transformed = { ...this.data }
+    
+    for (const transform of transformations) {
+      switch (transform.type) {
+        case 'normalize':
+          transformed = this.normalize(transformed, transform.options)
+          break
+        case 'standardize':
+          transformed = this.standardize(transformed, transform.options)
+          break
+        case 'log':
+          transformed = this.logTransform(transformed, transform.options)
+          break
+        case 'removeOutliers':
+          transformed = this.removeOutliers(transformed, transform.options)
+          break
+      }
     }
     
-    static detectDelimiter(text) {
-        const delimiters = ['\t', ',', ';', '|'];
-        // 가장 많이 나타나는 구분자 반환
-        return delimiters.reduce((a, b) => 
-            text.split(a).length > text.split(b).length ? a : b
-        );
-    }
+    return transformed
+  }
 }
 ```
 
 ---
 
-## 3. 통계 엔진 명세
+## 3. API 명세
 
-### 3.1 Python 통계 함수
-```python
-STATISTICAL_FUNCTIONS = """
-class StatisticalAnalyzer:
-    def __init__(self):
-        self.results = {}
-        
-    def analyze(self, data_json):
-        '''
-        메인 분석 함수
-        @param data_json: JSON 문자열 형태의 데이터
-        @return: JSON 문자열 형태의 결과
-        '''
-        data = json.loads(data_json)
-        groups = [np.array(g) for g in data['groups']]
-        
-        # 1. 기술통계
-        self.results['descriptive'] = self._descriptive_stats(groups)
-        
-        # 2. 가정 검정
-        self.results['assumptions'] = self._check_assumptions(groups)
-        
-        # 3. 주 검정
-        if len(groups) == 2:
-            self.results['main_test'] = self._two_group_test(groups)
-        else:
-            self.results['main_test'] = self._multi_group_test(groups)
-        
-        # 4. 사후분석 (필요시)
-        if self.results['main_test']['p_value'] < 0.05 and len(groups) > 2:
-            self.results['post_hoc'] = self._post_hoc_analysis(
-                groups, 
-                self.results['main_test']['test_type']
-            )
-        
-        return json.dumps(self.results)
+### 3.1 통계 분석 API
+```typescript
+// app/api/analysis/route.ts
+
+export async function POST(request: Request) {
+  const { testType, data, options } = await request.json()
+  
+  try {
+    // 입력 검증
+    validateInput(testType, data, options)
     
-    def _descriptive_stats(self, groups):
-        '''기술통계량 계산'''
-        stats_list = []
-        for i, group in enumerate(groups):
-            stats_list.append({
-                'n': len(group),
-                'mean': float(np.mean(group)),
-                'std': float(np.std(group, ddof=1)),
-                'sem': float(stats.sem(group)),
-                'median': float(np.median(group)),
-                'q1': float(np.percentile(group, 25)),
-                'q3': float(np.percentile(group, 75)),
-                'min': float(np.min(group)),
-                'max': float(np.max(group)),
-                'ci95_lower': float(stats.t.interval(0.95, len(group)-1, 
-                                   loc=np.mean(group), 
-                                   scale=stats.sem(group))[0]),
-                'ci95_upper': float(stats.t.interval(0.95, len(group)-1,
-                                   loc=np.mean(group),
-                                   scale=stats.sem(group))[1])
+    // Pyodide 실행
+    const manager = PyodideManager.getInstance()
+    const result = await manager.runPython(`
+      run_statistical_test('${testType}', ${JSON.stringify(data)}, ${JSON.stringify(options)})
+    `)
+    
+    // 결과 타입 변환
+    const typedResult = parseResult(result, testType)
+    
+    return NextResponse.json({
+      success: true,
+      result: typedResult,
+      timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }, { status: 400 })
+  }
+}
+```
+
+### 3.2 데이터 업로드 API
+```typescript
+// app/api/data/upload/route.ts
+
+export async function POST(request: Request) {
+  const formData = await request.formData()
+  const file = formData.get('file') as File
+  
+  if (!file) {
+    return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+  }
+  
+  // 파일 크기 제한 (10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: 'File too large' }, { status: 400 })
+  }
+  
+  try {
+    const handler = new DataHandler()
+    const data = await handler.parseCSV(file)
+    
+    // 세션 스토리지에 저장
+    const sessionId = generateSessionId()
+    await saveToSession(sessionId, data)
+    
+    return NextResponse.json({
+      sessionId,
+      metadata: handler.getMetadata(),
+      preview: data.slice(0, 10) // 처음 10행 미리보기
+    })
+    
+  } catch (error) {
+    return NextResponse.json({ 
+      error: 'Failed to parse file',
+      details: error.message 
+    }, { status: 400 })
+  }
+}
+```
+
+---
+
+## 4. 상태 관리
+
+### 4.1 Zustand Store 구조
+```typescript
+// lib/store.ts
+
+interface StatisticsStore {
+  // 데이터
+  currentData: DataFrame | null
+  sessionId: string | null
+  
+  // 분석 결과
+  analysisHistory: AnalysisResult[]
+  currentAnalysis: AnalysisResult | null
+  
+  // UI 상태
+  isLoading: boolean
+  error: string | null
+  
+  // 사용자 설정
+  preferences: UserPreferences
+  
+  // 액션
+  setData: (data: DataFrame) => void
+  runAnalysis: (type: string, options: any) => Promise<void>
+  clearResults: () => void
+  updatePreferences: (prefs: Partial<UserPreferences>) => void
+}
+
+export const useStatisticsStore = create<StatisticsStore>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        // 초기 상태
+        currentData: null,
+        sessionId: null,
+        analysisHistory: [],
+        currentAnalysis: null,
+        isLoading: false,
+        error: null,
+        preferences: defaultPreferences,
+        
+        // 액션 구현
+        setData: (data) => set({ currentData: data }),
+        
+        runAnalysis: async (type, options) => {
+          set({ isLoading: true, error: null })
+          
+          try {
+            const response = await fetch('/api/analysis', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                testType: type,
+                data: get().currentData,
+                options
+              })
             })
-        return stats_list
-    
-    def _check_assumptions(self, groups):
-        '''정규성 및 등분산성 검정'''
-        # 정규성 검정
-        normality = []
-        for group in groups:
-            if len(group) < 3:
-                normality.append({'test': 'Too few samples', 'p_value': None})
-            elif len(group) < 50:
-                stat, p = stats.shapiro(group)
-                normality.append({
-                    'test': 'Shapiro-Wilk',
-                    'statistic': float(stat),
-                    'p_value': float(p),
-                    'is_normal': p > 0.05
-                })
-            else:
-                stat, p = stats.kstest(group, 'norm', 
-                                      args=(np.mean(group), np.std(group)))
-                normality.append({
-                    'test': 'Kolmogorov-Smirnov',
-                    'statistic': float(stat),
-                    'p_value': float(p),
-                    'is_normal': p > 0.05
-                })
-        
-        # 등분산성 검정
-        if len(groups) >= 2:
-            stat_lev, p_lev = stats.levene(*groups)
-            stat_bart, p_bart = stats.bartlett(*groups)
-            homogeneity = {
-                'levene': {
-                    'statistic': float(stat_lev),
-                    'p_value': float(p_lev),
-                    'equal_var': p_lev > 0.05
-                },
-                'bartlett': {
-                    'statistic': float(stat_bart),
-                    'p_value': float(p_bart),
-                    'equal_var': p_bart > 0.05
-                }
+            
+            const result = await response.json()
+            
+            if (result.success) {
+              set({
+                currentAnalysis: result.result,
+                analysisHistory: [...get().analysisHistory, result.result]
+              })
+            } else {
+              set({ error: result.error })
             }
-        else:
-            homogeneity = None
+          } catch (error) {
+            set({ error: error.message })
+          } finally {
+            set({ isLoading: false })
+          }
+        },
         
-        return {
-            'normality': normality,
-            'homogeneity': homogeneity,
-            'all_normal': all(n.get('is_normal', False) for n in normality),
-            'equal_variance': homogeneity['levene']['equal_var'] if homogeneity else None
-        }
-    
-    def _two_group_test(self, groups):
-        '''2그룹 비교 검정'''
-        assumptions = self.results['assumptions']
+        clearResults: () => set({ 
+          currentAnalysis: null, 
+          analysisHistory: [] 
+        }),
         
-        if assumptions['all_normal'] and assumptions['equal_variance']:
-            # Independent t-test
-            stat, p = stats.ttest_ind(groups[0], groups[1])
-            test_type = 'Independent t-test'
-        elif assumptions['all_normal'] and not assumptions['equal_variance']:
-            # Welch's t-test
-            stat, p = stats.ttest_ind(groups[0], groups[1], equal_var=False)
-            test_type = "Welch's t-test"
-        else:
-            # Mann-Whitney U test
-            stat, p = stats.mannwhitneyu(groups[0], groups[1])
-            test_type = 'Mann-Whitney U test'
-        
-        # 효과 크기 (Cohen's d)
-        pooled_std = np.sqrt(((len(groups[0])-1)*np.var(groups[0], ddof=1) + 
-                              (len(groups[1])-1)*np.var(groups[1], ddof=1)) / 
-                             (len(groups[0]) + len(groups[1]) - 2))
-        cohens_d = (np.mean(groups[0]) - np.mean(groups[1])) / pooled_std
-        
-        return {
-            'test_type': test_type,
-            'statistic': float(stat),
-            'p_value': float(p),
-            'effect_size': float(cohens_d),
-            'significant': p < 0.05
-        }
-    
-    def _multi_group_test(self, groups):
-        '''3그룹 이상 비교 검정'''
-        assumptions = self.results['assumptions']
-        
-        if assumptions['all_normal'] and assumptions['equal_variance']:
-            # One-way ANOVA
-            stat, p = stats.f_oneway(*groups)
-            test_type = 'One-way ANOVA'
-            
-            # 효과 크기 (eta-squared)
-            grand_mean = np.mean(np.concatenate(groups))
-            ss_between = sum(len(g) * (np.mean(g) - grand_mean)**2 for g in groups)
-            ss_total = sum(np.sum((g - grand_mean)**2) for g in groups)
-            eta_squared = ss_between / ss_total
-            effect_size = eta_squared
-            
-        elif assumptions['all_normal'] and not assumptions['equal_variance']:
-            # Welch's ANOVA (근사)
-            stat, p = stats.f_oneway(*groups)  # scipy 1.9+에서 개선됨
-            test_type = "Welch's ANOVA"
-            effect_size = None
-            
-        else:
-            # Kruskal-Wallis test
-            stat, p = stats.kruskal(*groups)
-            test_type = 'Kruskal-Wallis test'
-            
-            # 효과 크기 (epsilon-squared)
-            n = sum(len(g) for g in groups)
-            k = len(groups)
-            epsilon_squared = (stat - k + 1) / (n - k)
-            effect_size = epsilon_squared
-        
-        return {
-            'test_type': test_type,
-            'statistic': float(stat),
-            'p_value': float(p),
-            'effect_size': float(effect_size) if effect_size else None,
-            'significant': p < 0.05
-        }
-    
-    def _post_hoc_analysis(self, groups, test_type):
-        '''사후분석'''
-        results = []
-        
-        if 'ANOVA' in test_type:
-            # Tukey HSD
-            from scipy.stats import tukey_hsd
-            res = tukey_hsd(*groups)
-            
-            # 결과 정리
-            k = len(groups)
-            idx = 0
-            for i in range(k):
-                for j in range(i+1, k):
-                    results.append({
-                        'group1': i,
-                        'group2': j,
-                        'method': 'Tukey HSD',
-                        'mean_diff': float(res.statistic[idx]),
-                        'p_value': float(res.pvalue[idx]),
-                        'ci_lower': float(res.confidence_interval(0.95).low[idx]),
-                        'ci_upper': float(res.confidence_interval(0.95).high[idx]),
-                        'significant': res.pvalue[idx] < 0.05
-                    })
-                    idx += 1
-                    
-        else:  # Kruskal-Wallis
-            # Dunn's test 구현
-            from scipy.stats import rankdata
-            from itertools import combinations
-            
-            # 전체 데이터 순위화
-            all_data = np.concatenate(groups)
-            all_ranks = rankdata(all_data)
-            
-            # 그룹별 평균 순위
-            rank_means = []
-            start = 0
-            for group in groups:
-                end = start + len(group)
-                rank_means.append(np.mean(all_ranks[start:end]))
-                start = end
-            
-            # Dunn's test
-            n = len(all_data)
-            k = len(groups)
-            
-            for i, j in combinations(range(k), 2):
-                # Z 통계량 계산
-                ni, nj = len(groups[i]), len(groups[j])
-                se = np.sqrt((n * (n + 1) / 12) * (1/ni + 1/nj))
-                z = abs(rank_means[i] - rank_means[j]) / se
-                p = 2 * (1 - stats.norm.cdf(z))
-                
-                # Bonferroni 보정
-                p_adjusted = min(1, p * (k * (k - 1) / 2))
-                
-                results.append({
-                    'group1': i,
-                    'group2': j,
-                    'method': "Dunn's test",
-                    'z_statistic': float(z),
-                    'p_value': float(p),
-                    'p_adjusted': float(p_adjusted),
-                    'significant': p_adjusted < 0.05
-                })
-        
-        return results
-
-# 인스턴스 생성
-analyzer = StatisticalAnalyzer()
-"""
-```
-
----
-
-## 4. 시각화 명세
-
-### 4.1 Chart.js 설정
-```javascript
-class Visualizer {
-    constructor() {
-        this.charts = {};
-    }
-    
-    createBoxPlot(containerId, data, postHocResults) {
-        const ctx = document.getElementById(containerId).getContext('2d');
-        
-        // Box plot 데이터 준비
-        const boxplotData = data.groups.map((group, idx) => ({
-            label: data.labels[idx],
-            data: this.calculateBoxplotStats(group),
-            backgroundColor: this.getColor(idx, 0.5),
-            borderColor: this.getColor(idx, 1),
-            outlierColor: 'red'
-        }));
-        
-        // 유의미한 차이 표시선
-        const annotations = this.createSignificanceAnnotations(postHocResults);
-        
-        this.charts.boxplot = new Chart(ctx, {
-            type: 'boxplot',
-            data: { datasets: boxplotData },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: '그룹별 분포 비교'
-                    },
-                    annotation: {
-                        annotations: annotations
-                    }
-                }
-            }
-        });
-    }
-    
-    calculateBoxplotStats(data) {
-        const sorted = data.sort((a, b) => a - b);
-        const q1 = this.percentile(sorted, 25);
-        const median = this.percentile(sorted, 50);
-        const q3 = this.percentile(sorted, 75);
-        const iqr = q3 - q1;
-        const min = Math.max(sorted[0], q1 - 1.5 * iqr);
-        const max = Math.min(sorted[sorted.length - 1], q3 + 1.5 * iqr);
-        
-        // 이상치 찾기
-        const outliers = sorted.filter(v => v < min || v > max);
-        
-        return {
-            min: min,
-            q1: q1,
-            median: median,
-            q3: q3,
-            max: max,
-            outliers: outliers
-        };
-    }
-    
-    createMeanChart(containerId, statistics) {
-        const ctx = document.getElementById(containerId).getContext('2d');
-        
-        this.charts.meanChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: statistics.map((_, i) => `Group ${i + 1}`),
-                datasets: [{
-                    label: '평균 ± 95% CI',
-                    data: statistics.map(s => s.mean),
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgb(54, 162, 235)',
-                    borderWidth: 1,
-                    errorBars: {
-                        plus: statistics.map(s => s.ci95_upper - s.mean),
-                        minus: statistics.map(s => s.mean - s.ci95_lower)
-                    }
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: '그룹별 평균 및 95% 신뢰구간'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        title: {
-                            display: true,
-                            text: '값'
-                        }
-                    }
-                }
-            }
-        });
-    }
-}
-```
-
----
-
-## 5. 결과 출력 명세
-
-### 5.1 Excel 내보내기
-```javascript
-class ExcelExporter {
-    static export(results) {
-        const wb = XLSX.utils.book_new();
-        
-        // Sheet 1: 원본 데이터
-        const rawDataSheet = this.createRawDataSheet(results.rawData);
-        XLSX.utils.book_append_sheet(wb, rawDataSheet, "원본데이터");
-        
-        // Sheet 2: 기술통계
-        const descSheet = this.createDescriptiveSheet(results.descriptive);
-        XLSX.utils.book_append_sheet(wb, descSheet, "기술통계");
-        
-        // Sheet 3: 가정 검정
-        const assumptionsSheet = this.createAssumptionsSheet(results.assumptions);
-        XLSX.utils.book_append_sheet(wb, assumptionsSheet, "가정검정");
-        
-        // Sheet 4: 주 검정 결과
-        const mainTestSheet = this.createMainTestSheet(results.main_test);
-        XLSX.utils.book_append_sheet(wb, mainTestSheet, "통계검정");
-        
-        // Sheet 5: 사후분석 (있는 경우)
-        if (results.post_hoc) {
-            const postHocSheet = this.createPostHocSheet(results.post_hoc);
-            XLSX.utils.book_append_sheet(wb, postHocSheet, "사후분석");
-        }
-        
-        // 파일 저장
-        const fileName = `통계분석결과_${new Date().toISOString().slice(0,10)}.xlsx`;
-        XLSX.writeFile(wb, fileName);
-    }
-}
-```
-
-### 5.2 PDF 보고서 생성
-```javascript
-class PDFReporter {
-    static async generate(results, charts) {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        
-        // 한글 폰트 설정
-        doc.addFont('NanumGothic.ttf', 'NanumGothic', 'normal');
-        doc.setFont('NanumGothic');
-        
-        // 제목
-        doc.setFontSize(20);
-        doc.text('통계 분석 보고서', 105, 20, { align: 'center' });
-        
-        // 생성 일시
-        doc.setFontSize(10);
-        doc.text(`생성일: ${new Date().toLocaleString('ko-KR')}`, 20, 30);
-        
-        // 요약
-        doc.setFontSize(14);
-        doc.text('1. 분석 요약', 20, 45);
-        
-        doc.setFontSize(11);
-        let y = 55;
-        results.interpretation.korean.forEach(line => {
-            doc.text(line, 25, y);
-            y += 7;
-        });
-        
-        // 차트 추가
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.text('2. 시각화', 20, 20);
-        
-        // Box plot
-        const boxplotImg = charts.boxplot.toBase64Image();
-        doc.addImage(boxplotImg, 'PNG', 20, 30, 170, 100);
-        
-        // Mean chart
-        doc.addPage();
-        const meanChartImg = charts.meanChart.toBase64Image();
-        doc.addImage(meanChartImg, 'PNG', 20, 20, 170, 100);
-        
-        // 통계표
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.text('3. 상세 통계 결과', 20, 20);
-        
-        // 테이블 생성
-        doc.autoTable({
-            startY: 30,
-            head: [['검정 방법', '통계량', 'p-value', '결과']],
-            body: [
-                [
-                    results.main_test.test_type,
-                    results.main_test.statistic.toFixed(4),
-                    results.main_test.p_value.toFixed(4),
-                    results.main_test.significant ? '유의미' : '유의미하지 않음'
-                ]
-            ]
-        });
-        
-        // 저장
-        doc.save(`통계분석보고서_${new Date().toISOString().slice(0,10)}.pdf`);
-    }
-}
-```
-
----
-
-## 6. 에러 처리
-
-### 6.1 에러 타입 정의
-```javascript
-class StatisticsError extends Error {
-    constructor(type, message, details) {
-        super(message);
-        this.type = type;
-        this.details = details;
-    }
-}
-
-const ERROR_TYPES = {
-    DATA_INVALID: 'DATA_INVALID',
-    INSUFFICIENT_DATA: 'INSUFFICIENT_DATA',
-    PYODIDE_LOAD_FAILED: 'PYODIDE_LOAD_FAILED',
-    CALCULATION_FAILED: 'CALCULATION_FAILED',
-    MEMORY_EXCEEDED: 'MEMORY_EXCEEDED'
-};
-```
-
-### 6.2 에러 핸들링
-```javascript
-class ErrorHandler {
-    static handle(error) {
-        console.error('Error occurred:', error);
-        
-        const userMessage = this.getUserMessage(error);
-        const solution = this.getSolution(error);
-        
-        // UI에 표시
-        this.showErrorModal({
-            title: '오류 발생',
-            message: userMessage,
-            solution: solution,
-            technical: error.toString()
-        });
-        
-        // 로그 기록
-        this.logError(error);
-    }
-    
-    static getUserMessage(error) {
-        const messages = {
-            DATA_INVALID: '입력된 데이터 형식이 올바르지 않습니다.',
-            INSUFFICIENT_DATA: '분석을 위한 데이터가 충분하지 않습니다. (최소 3개 이상)',
-            PYODIDE_LOAD_FAILED: 'Python 런타임 로딩에 실패했습니다.',
-            CALCULATION_FAILED: '통계 계산 중 오류가 발생했습니다.',
-            MEMORY_EXCEEDED: '메모리가 부족합니다. 데이터 크기를 줄여주세요.'
-        };
-        
-        return messages[error.type] || '알 수 없는 오류가 발생했습니다.';
-    }
-}
-```
-
----
-
-## 7. 성능 최적화
-
-### 7.1 Web Worker 구현
-```javascript
-// statistics.worker.js
-self.importScripts('pyodide.js');
-
-let pyodide = null;
-
-self.onmessage = async function(e) {
-    const { type, data } = e.data;
-    
-    switch(type) {
-        case 'init':
-            pyodide = await loadPyodide();
-            await pyodide.loadPackage(['numpy', 'scipy']);
-            self.postMessage({ type: 'ready' });
-            break;
-            
-        case 'analyze':
-            const result = await pyodide.runPythonAsync(`
-                analyzer.analyze('${JSON.stringify(data)}')
-            `);
-            self.postMessage({ type: 'result', data: JSON.parse(result) });
-            break;
-    }
-};
-```
-
-### 7.2 캐싱 전략
-```javascript
-class CacheManager {
-    constructor() {
-        this.cache = new Map();
-        this.maxSize = 50; // 최대 50개 결과 캐싱
-    }
-    
-    getKey(data) {
-        // 데이터를 기반으로 고유 키 생성
-        return btoa(JSON.stringify(data)).substring(0, 20);
-    }
-    
-    get(data) {
-        const key = this.getKey(data);
-        return this.cache.get(key);
-    }
-    
-    set(data, result) {
-        const key = this.getKey(data);
-        
-        // 캐시 크기 제한
-        if (this.cache.size >= this.maxSize) {
-            const firstKey = this.cache.keys().next().value;
-            this.cache.delete(firstKey);
-        }
-        
-        this.cache.set(key, {
-            result: result,
-            timestamp: Date.now()
-        });
-    }
-}
-```
-
----
-
-## 8. 보안 고려사항
-
-### 8.1 Content Security Policy
-```html
-<meta http-equiv="Content-Security-Policy" content="
-    default-src 'self' data: blob:;
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:;
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' data: blob:;
-    connect-src 'none';
-">
-```
-
-### 8.2 데이터 검증
-```javascript
-class DataValidator {
-    static validate(input) {
-        // XSS 방지
-        if (/<[^>]*>/g.test(input)) {
-            throw new StatisticsError(
-                ERROR_TYPES.DATA_INVALID,
-                'HTML 태그가 포함된 데이터는 처리할 수 없습니다.'
-            );
-        }
-        
-        // 크기 제한
-        if (input.length > 1000000) { // 1MB
-            throw new StatisticsError(
-                ERROR_TYPES.DATA_INVALID,
-                '데이터 크기가 너무 큽니다.'
-            );
-        }
-        
-        return true;
-    }
-}
-```
-
----
-
-## 9. 브라우저 호환성
-
-### 9.1 기능 감지
-```javascript
-class CompatibilityChecker {
-    static check() {
-        const requirements = {
-            webAssembly: typeof WebAssembly !== 'undefined',
-            sharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined',
-            bigInt: typeof BigInt !== 'undefined',
-            canvas: !!document.createElement('canvas').getContext
-        };
-        
-        const missing = Object.entries(requirements)
-            .filter(([_, supported]) => !supported)
-            .map(([feature]) => feature);
-        
-        if (missing.length > 0) {
-            throw new Error(`브라우저가 다음 기능을 지원하지 않습니다: ${missing.join(', ')}`);
-        }
-        
-        return true;
-    }
-}
-```
-
----
-
-## 10. 빌드 및 번들링
-
-### 10.1 빌드 스크립트
-```python
-# build.py
-import base64
-import json
-import os
-from pathlib import Path
-
-def create_single_html():
-    # Pyodide 파일 읽기
-    pyodide_wasm = Path('pyodide/pyodide.wasm').read_bytes()
-    pyodide_js = Path('pyodide/pyodide.js').read_text()
-    
-    # 패키지 파일들
-    packages = {}
-    for pkg in ['numpy', 'scipy', 'pandas']:
-        pkg_file = Path(f'pyodide/{pkg}.whl')
-        if pkg_file.exists():
-            packages[pkg] = base64.b64encode(pkg_file.read_bytes()).decode()
-    
-    # HTML 템플릿
-    template = Path('template.html').read_text()
-    
-    # 치환
-    output = template.replace(
-        '{{PYODIDE_WASM}}', base64.b64encode(pyodide_wasm).decode()
-    ).replace(
-        '{{PYODIDE_JS}}', pyodide_js
-    ).replace(
-        '{{PACKAGES}}', json.dumps(packages)
+        updatePreferences: (prefs) => set({ 
+          preferences: { ...get().preferences, ...prefs } 
+        })
+      }),
+      {
+        name: 'statistics-storage',
+        partialize: (state) => ({ 
+          preferences: state.preferences,
+          analysisHistory: state.analysisHistory.slice(-10) // 최근 10개만 저장
+        })
+      }
     )
-    
-    # 저장
-    Path('통계분석도구.html').write_text(output)
-    
-    # 파일 크기 확인
-    size_mb = os.path.getsize('통계분석도구.html') / (1024 * 1024)
-    print(f"✅ 파일 생성 완료: 통계분석도구.html ({size_mb:.1f} MB)")
-
-if __name__ == '__main__':
-    create_single_html()
+  )
+)
 ```
 
 ---
 
-*마지막 업데이트: 2025-01-03*
+## 5. UI 컴포넌트 시스템
+
+### 5.1 데이터 테이블 컴포넌트
+```typescript
+// components/data/DataTable.tsx
+
+interface DataTableProps {
+  data: DataFrame
+  onEdit?: (row: number, col: number, value: any) => void
+  onSort?: (column: string, direction: 'asc' | 'desc') => void
+  selectable?: boolean
+  editable?: boolean
+}
+
+export function DataTable({ 
+  data, 
+  onEdit, 
+  onSort, 
+  selectable = false, 
+  editable = false 
+}: DataTableProps) {
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
+  
+  return (
+    <div className="w-full overflow-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {selectable && (
+              <TableHead className="w-12">
+                <Checkbox onCheckedChange={handleSelectAll} />
+              </TableHead>
+            )}
+            {data.columns.map(column => (
+              <TableHead 
+                key={column}
+                onClick={() => handleSort(column)}
+                className="cursor-pointer hover:bg-accent"
+              >
+                <div className="flex items-center gap-2">
+                  {column}
+                  {sortConfig?.column === column && (
+                    <SortIcon direction={sortConfig.direction} />
+                  )}
+                </div>
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {/* Virtual scrolling for large datasets */}
+          <VirtualList
+            height={600}
+            itemCount={data.rows.length}
+            itemSize={48}
+            renderItem={({ index }) => (
+              <DataRow
+                row={data.rows[index]}
+                index={index}
+                selected={selectedRows.has(index)}
+                editable={editable}
+                onEdit={onEdit}
+                onSelect={handleRowSelect}
+              />
+            )}
+          />
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+```
+
+### 5.2 분석 마법사 컴포넌트
+```typescript
+// components/analysis/AnalysisWizard.tsx
+
+export function AnalysisWizard() {
+  const [step, setStep] = useState(0)
+  const [testType, setTestType] = useState<string>('')
+  const [variables, setVariables] = useState<Variable[]>([])
+  const [options, setOptions] = useState<AnalysisOptions>({})
+  
+  const steps = [
+    { title: '테스트 선택', component: <TestSelector onSelect={setTestType} /> },
+    { title: '변수 선택', component: <VariableSelector onSelect={setVariables} /> },
+    { title: '가정 검정', component: <AssumptionChecker variables={variables} /> },
+    { title: '옵션 설정', component: <OptionsPanel test={testType} onChange={setOptions} /> },
+    { title: '결과 확인', component: <ResultsPreview test={testType} variables={variables} options={options} /> }
+  ]
+  
+  return (
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>통계 분석 마법사</CardTitle>
+        <Progress value={(step + 1) / steps.length * 100} />
+      </CardHeader>
+      <CardContent className="min-h-[400px]">
+        {steps[step].component}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button 
+          variant="outline" 
+          onClick={() => setStep(Math.max(0, step - 1))}
+          disabled={step === 0}
+        >
+          이전
+        </Button>
+        <span className="text-sm text-muted-foreground">
+          {step + 1} / {steps.length} - {steps[step].title}
+        </span>
+        <Button 
+          onClick={() => step === steps.length - 1 ? handleAnalysis() : setStep(step + 1)}
+        >
+          {step === steps.length - 1 ? '분석 실행' : '다음'}
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+```
+
+---
+
+## 6. 성능 최적화
+
+### 6.1 Pyodide 최적화
+```typescript
+// 1. 지연 로딩
+const PyodideLoader = dynamic(() => import('@/lib/pyodide/loader'), {
+  ssr: false,
+  loading: () => <LoadingSpinner />
+})
+
+// 2. 웹 워커 사용
+const worker = new Worker('/workers/pyodide.worker.js')
+worker.postMessage({ type: 'init' })
+
+// 3. 결과 캐싱
+const cache = new Map<string, any>()
+const getCachedResult = (key: string) => {
+  if (cache.has(key)) {
+    return cache.get(key)
+  }
+  const result = computeExpensiveOperation(key)
+  cache.set(key, result)
+  return result
+}
+```
+
+### 6.2 React 최적화
+```typescript
+// 1. 메모이제이션
+const MemoizedChart = memo(Chart, (prev, next) => 
+  prev.data === next.data && prev.type === next.type
+)
+
+// 2. 가상 스크롤링
+import { VariableSizeList } from 'react-window'
+
+// 3. 상태 분리
+const useAnalysisState = () => {
+  const data = useStatisticsStore(state => state.currentData)
+  const analysis = useStatisticsStore(state => state.currentAnalysis)
+  return { data, analysis }
+}
+```
+
+---
+
+## 7. 에러 처리
+
+### 7.1 전역 에러 바운더리
+```typescript
+// app/error.tsx
+'use client'
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    // 에러 로깅
+    console.error('Application error:', error)
+    
+    // Sentry 또는 다른 에러 추적 서비스로 전송
+    if (process.env.NODE_ENV === 'production') {
+      captureException(error)
+    }
+  }, [error])
+  
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>오류가 발생했습니다</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            {error.message || '알 수 없는 오류가 발생했습니다.'}
+          </p>
+          {process.env.NODE_ENV === 'development' && (
+            <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+              {error.stack}
+            </pre>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button onClick={reset} className="w-full">
+            다시 시도
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  )
+}
+```
+
+### 7.2 분석 에러 처리
+```typescript
+class StatisticalError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public details?: any
+  ) {
+    super(message)
+    this.name = 'StatisticalError'
+  }
+}
+
+// 사용 예시
+if (data.length < MIN_SAMPLE_SIZE) {
+  throw new StatisticalError(
+    `최소 ${MIN_SAMPLE_SIZE}개 이상의 데이터가 필요합니다.`,
+    'INSUFFICIENT_DATA',
+    { provided: data.length, required: MIN_SAMPLE_SIZE }
+  )
+}
+```
+
+---
+
+## 8. 테스트 전략
+
+### 8.1 단위 테스트
+```typescript
+// __tests__/statistics.test.ts
+import { describe, it, expect } from '@jest/globals'
+import { calculateMean, calculateTTest } from '@/lib/statistics'
+
+describe('Statistics Functions', () => {
+  describe('calculateMean', () => {
+    it('should calculate mean correctly', () => {
+      expect(calculateMean([1, 2, 3, 4, 5])).toBe(3)
+    })
+    
+    it('should handle empty array', () => {
+      expect(() => calculateMean([])).toThrow('INSUFFICIENT_DATA')
+    })
+  })
+  
+  describe('t-test', () => {
+    it('should match R output', () => {
+      const result = calculateTTest(
+        [1, 2, 3, 4, 5],
+        [2, 3, 4, 5, 6]
+      )
+      expect(result.pValue).toBeCloseTo(0.0421, 4)
+    })
+  })
+})
+```
+
+### 8.2 통합 테스트
+```typescript
+// __tests__/integration/analysis-flow.test.ts
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+
+describe('Analysis Flow', () => {
+  it('should complete full analysis workflow', async () => {
+    render(<AnalysisPage />)
+    
+    // 파일 업로드
+    const file = new File(['col1,col2\n1,2\n3,4'], 'test.csv')
+    const input = screen.getByLabelText('Upload CSV')
+    await userEvent.upload(input, file)
+    
+    // 테스트 선택
+    await userEvent.click(screen.getByText('t-test'))
+    
+    // 분석 실행
+    await userEvent.click(screen.getByText('Run Analysis'))
+    
+    // 결과 확인
+    await waitFor(() => {
+      expect(screen.getByText(/p-value/i)).toBeInTheDocument()
+    })
+  })
+})
+```
+
+---
+
+## 9. 보안 고려사항
+
+### 9.1 입력 검증
+```typescript
+// 파일 업로드 검증
+const validateFile = (file: File): boolean => {
+  const allowedTypes = ['text/csv', 'application/vnd.ms-excel']
+  const maxSize = 10 * 1024 * 1024 // 10MB
+  
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Invalid file type')
+  }
+  
+  if (file.size > maxSize) {
+    throw new Error('File too large')
+  }
+  
+  return true
+}
+
+// SQL Injection 방지 (데이터베이스 사용 시)
+const sanitizeInput = (input: string): string => {
+  return input.replace(/[^a-zA-Z0-9_-]/g, '')
+}
+```
+
+### 9.2 CORS 설정
+```typescript
+// next.config.ts
+const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: process.env.ALLOWED_ORIGIN },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
+        ],
+      },
+    ]
+  },
+}
+```
+
+---
+
+## 10. 배포 및 모니터링
+
+### 10.1 Docker 컨테이너화
+```dockerfile
+# Dockerfile
+FROM node:20-alpine AS base
+
+# Dependencies
+FROM base AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+# Builder
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+# Runner
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+EXPOSE 3000
+ENV PORT=3000
+
+CMD ["node", "server.js"]
+```
+
+### 10.2 성능 모니터링
+```typescript
+// lib/monitoring.ts
+export const measurePerformance = (name: string, fn: () => void) => {
+  const start = performance.now()
+  fn()
+  const end = performance.now()
+  
+  // 성능 데이터 수집
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'timing_complete', {
+      name,
+      value: Math.round(end - start),
+      event_category: 'Performance',
+    })
+  }
+}
+
+// 사용 예시
+measurePerformance('analysis_complete', () => {
+  runComplexAnalysis()
+})
+```
+
+---
+
+## 11. 향후 확장 계획
+
+### 11.1 AI 모델 통합
+- Ollama 기반 로컬 LLM 통합
+- 자동 분석 방법 추천
+- 결과 해석 자동화
+
+### 11.2 실시간 협업
+- WebSocket 기반 실시간 동기화
+- 다중 사용자 동시 편집
+- 분석 결과 공유
+
+### 11.3 클라우드 연동
+- AWS S3 파일 스토리지
+- Google Sheets 연동
+- API 서비스 제공
+
+---
+
+*최종 업데이트: 2025-09-12*  
+*다음 리뷰: Phase 2 완료 시*
