@@ -1,384 +1,359 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { SimpleUploadDialog } from "@/components/home/simple-upload-dialog"
-import { 
-  BarChart3, 
-  Brain, 
-  CheckCircle2,
-  TrendingUp,
-  Activity,
-  Sparkles,
-  ArrowRight,
-  FileText,
-  Database,
-  Shield,
-  Zap,
-  Users,
-  Award
-} from "lucide-react"
+import { useCallback, useEffect, useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { ChevronRight, ChevronLeft, Upload, CheckCircle, BarChart3, FileText, Sparkles, HelpCircle, X, Clock } from 'lucide-react'
+import { ProgressStepper } from '@/components/smart-flow/ProgressStepper'
+import { DataUploadStep } from '@/components/smart-flow/steps/DataUploadStep'
+import { DataValidationStep } from '@/components/smart-flow/steps/DataValidationStep'
+import { PurposeInputStep } from '@/components/smart-flow/steps/PurposeInputStep'
+import { AnalysisExecutionStep } from '@/components/smart-flow/steps/AnalysisExecutionStep'
+import { ResultsActionStep } from '@/components/smart-flow/steps/ResultsActionStep'
+import { AnalysisHistoryPanel } from '@/components/smart-flow/AnalysisHistoryPanel'
+import { useSmartFlowStore } from '@/lib/stores/smart-flow-store'
+import { DataValidationService } from '@/lib/services/data-validation-service'
+import {
+  StepConfig,
+  ValidationResults,
+  StatisticalMethod,
+  AnalysisResult,
+  DataRow
+} from '@/types/smart-flow'
 
-export default function HomePage() {
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+const steps: StepConfig[] = [
+  { id: 1, name: '데이터 업로드', icon: Upload, description: '분석할 데이터 파일을 업로드하세요' },
+  { id: 2, name: '데이터 검증', icon: CheckCircle, description: '데이터를 자동으로 검증합니다' },
+  { id: 3, name: '분석 목적', icon: Sparkles, description: '무엇을 알고 싶은지 알려주세요' },
+  { id: 4, name: '통계 분석', icon: BarChart3, description: '최적의 통계 방법으로 분석합니다' },
+  { id: 5, name: '결과 및 액션', icon: FileText, description: '결과를 확인하고 다음 단계를 선택하세요' }
+]
+
+export default function SmartFlowPageRefactored() {
+  const [showHelp, setShowHelp] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [systemMemory, setSystemMemory] = useState<number | null>(null)
+  
+  // 시스템 메모리 감지 (Navigator API)
+  useEffect(() => {
+    interface NavigatorWithMemory extends Navigator {
+      deviceMemory?: number
+    }
+
+    if (typeof navigator !== 'undefined') {
+      const nav = navigator as NavigatorWithMemory
+      if (nav.deviceMemory) {
+        setSystemMemory(nav.deviceMemory) // GB 단위
+      }
+    }
+  }, [])
+  
+  // Zustand store 사용 (세션 스토리지 자동 저장/복원)
+  const {
+    currentStep,
+    completedSteps,
+    uploadedFile,
+    uploadedData,
+    validationResults,
+    selectedMethod,
+    analysisResults,
+    isLoading,
+    error,
+    setCurrentStep,
+    setUploadedFile,
+    setUploadedData,
+    setValidationResults,
+    setAnalysisPurpose,
+    setSelectedMethod,
+    setAnalysisResults,
+    setError,
+    canProceedToNext,
+    goToNextStep,
+    goToPreviousStep,
+    addCompletedStep,
+    reset,
+    navigateToStep,
+    canNavigateToStep
+  } = useSmartFlowStore()
+
+  const handleStepClick = useCallback((stepId: number) => {
+    if (canNavigateToStep(stepId)) {
+      navigateToStep(stepId)
+    }
+  }, [canNavigateToStep, navigateToStep])
+
+  const handleUploadComplete = useCallback((file: File, data: any[]) => {
+    try {
+      setUploadedFile(file)
+      setUploadedData(data)
+      
+      // 향상된 데이터 검증
+      const validation = performDataValidation(data)
+      setValidationResults(validation)
+      
+      // 검증 성공 시 다음 단계로
+      if (validation.isValid) {
+        goToNextStep()
+      }
+    } catch (err) {
+      setError('데이터 업로드 중 오류가 발생했습니다: ' + (err as Error).message)
+    }
+  }, [setUploadedFile, setUploadedData, setValidationResults, goToNextStep, setError])
+
+  const handlePurposeSubmit = useCallback((purpose: string, method: StatisticalMethod) => {
+    setAnalysisPurpose(purpose)
+    setSelectedMethod(method)
+    goToNextStep()
+  }, [setAnalysisPurpose, setSelectedMethod, goToNextStep])
+
+  const handleAnalysisComplete = useCallback((results: AnalysisResult) => {
+    setAnalysisResults(results)
+    goToNextStep()
+  }, [setAnalysisResults, goToNextStep])
+
+  // 데이터 검증 수행
+  const performDataValidation = (data: DataRow[]): ValidationResults => {
+    return DataValidationService.performValidation(data)
+  }
+  
+  // 데이터 정보 추출 (PurposeInputStep에 전달용)
+  const getDataInfo = () => {
+    if (!uploadedData) return null
+    return DataValidationService.getDataInfo(uploadedData)
+  }
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 via-background to-background">
-        <div className="container mx-auto px-4 py-24">
-          <div className="text-center space-y-6 max-w-4xl mx-auto">
-            <Badge className="inline-flex items-center gap-1" variant="outline">
-              <Sparkles className="h-3 w-3" />
-              AI 기반 통계 분석 플랫폼
-            </Badge>
-            
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
-              스마트한 모두의
-              <span className="text-primary block mt-2">통계처리</span>
-            </h1>
-            
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              복잡한 통계 분석을 쉽고 빠르게. 데이터를 업로드하면 AI가 최적의 통계 방법을 추천해드립니다.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-              <Button 
-                size="lg" 
-                className="text-lg px-8 py-6 group"
-                asChild
-              >
-                <a href="/smart-flow">
-                  <Brain className="mr-2 h-5 w-5" />
-                  스마트 분석 시작하기
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </a>
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-lg px-8 py-6"
-                asChild
-              >
-                <a href="/analysis">
-                  <BarChart3 className="mr-2 h-5 w-5" />
-                  직접 분석 방법 선택
-                </a>
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="container max-w-6xl mx-auto p-6 space-y-8">
+        {/* 헤더 */}
+        <div className="text-center space-y-2 relative">
+          <h1 className="text-4xl font-bold tracking-tight">스마트 통계 분석</h1>
+          <p className="text-muted-foreground text-lg">
+            단계별 안내를 따라 쉽고 정확한 통계 분석을 진행하세요
+          </p>
+          
+          {/* 액션 버튼들 */}
+          <div className="absolute right-0 top-0 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              분석 히스토리
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHelp(!showHelp)}
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              데이터 제한 안내
+            </Button>
           </div>
         </div>
         
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-          <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-        </div>
-      </section>
-
-      {/* Trust Indicators */}
-      <section className="py-12 border-y bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-3xl font-bold text-primary">29+</div>
-              <div className="text-sm text-muted-foreground">통계 분석 방법</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">99.9%</div>
-              <div className="text-sm text-muted-foreground">정확도</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">10초</div>
-              <div className="text-sm text-muted-foreground">평균 분석 시간</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">무료</div>
-              <div className="text-sm text-muted-foreground">완전 무료 사용</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Features */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">왜 우리 플랫폼을 선택해야 할까요?</h2>
-            <p className="text-muted-foreground text-lg">SPSS, R Studio 수준의 전문 통계 분석을 웹에서 간편하게</p>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16" />
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Brain className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>AI 기반 스마트 분석</CardTitle>
-                <CardDescription className="text-base">
-                  데이터 특성을 자동으로 파악하고 최적의 통계 방법을 추천합니다. 초보자도 전문가 수준의 분석이 가능합니다.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16" />
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>검증된 통계 엔진</CardTitle>
-                <CardDescription className="text-base">
-                  Python SciPy 기반의 신뢰할 수 있는 통계 계산. 논문과 연구에 사용 가능한 정확한 결과를 제공합니다.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16" />
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Zap className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>빠르고 간편한 분석</CardTitle>
-                <CardDescription className="text-base">
-                  복잡한 설치 없이 웹 브라우저에서 즉시 사용. CSV 파일만 업로드하면 10초 내에 결과를 확인할 수 있습니다.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Statistical Methods */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">29가지 전문 통계 분석 방법</h2>
-            <p className="text-muted-foreground text-lg">연구와 논문에 필요한 모든 통계 분석을 지원합니다</p>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  기초 통계 분석
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">기술통계 & 정규성 검정</span>
-                  <Badge variant="outline">3 methods</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">T-검정 (일표본, 독립, 대응)</span>
-                  <Badge variant="outline">4 methods</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">상관분석 & 회귀분석</span>
-                  <Badge variant="outline">4 methods</Badge>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  고급 통계 분석
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">분산분석 (ANOVA) & 사후검정</span>
-                  <Badge variant="outline">5 methods</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">비모수 검정</span>
-                  <Badge variant="outline">5 methods</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">다변량 분석 & 머신러닝</span>
-                  <Badge variant="outline">8 methods</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">간단한 3단계 분석 프로세스</h2>
-            <p className="text-muted-foreground text-lg">복잡한 통계도 쉽게</p>
-          </div>
-          
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-primary">1</span>
+        {/* 도움말 패널 */}
+        {showHelp && (
+          <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">💾 데이터 크기 가이드</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHelp(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-              <h3 className="text-xl font-semibold mb-2">데이터 업로드</h3>
-              <p className="text-muted-foreground">
-                CSV, Excel 파일을 드래그 앤 드롭으로 간편하게 업로드
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-primary">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">분석 목적 설명</h3>
-              <p className="text-muted-foreground">
-                무엇을 알고 싶은지 간단히 설명하면 AI가 최적 방법 추천
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-primary">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">결과 확인</h3>
-              <p className="text-muted-foreground">
-                전문적인 통계 결과와 시각화를 즉시 확인하고 다운로드
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Data Quality Features */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid gap-8 md:grid-cols-2 items-center">
-            <div>
-              <h2 className="text-3xl font-bold mb-6">데이터 품질 자동 검증</h2>
-              <p className="text-muted-foreground text-lg mb-8">
-                분석 전 데이터의 품질을 자동으로 검사하여 신뢰할 수 있는 결과를 보장합니다.
-              </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold">결측값 탐지 및 처리</h4>
-                    <p className="text-sm text-muted-foreground">누락된 데이터를 자동으로 찾아 적절한 처리 방법 제안</p>
-                  </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium mb-2">현재 제한사항</h4>
+                  <ul className="text-sm space-y-1 text-muted-foreground">
+                    <li>• 최대 파일: 50MB</li>
+                    <li>• 최대 데이터: 100,000행 × 1,000열</li>
+                    <li>• 권장: 10,000행 이하 (빠른 처리)</li>
+                  </ul>
                 </div>
-                
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold">이상치 식별 (IQR 방법)</h4>
-                    <p className="text-sm text-muted-foreground">통계적 방법으로 비정상적인 값을 탐지하고 표시</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold">데이터 타입 검증</h4>
-                    <p className="text-sm text-muted-foreground">각 열의 데이터 유형을 자동으로 판별하고 변환</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold">정규성 및 등분산성 검정</h4>
-                    <p className="text-sm text-muted-foreground">통계 분석의 기본 가정을 자동으로 검증</p>
-                  </div>
+                <div>
+                  <h4 className="font-medium mb-2">메모리별 권장 크기</h4>
+                  <ul className="text-sm space-y-1 text-muted-foreground">
+                    <li>• 4GB RAM: ~10,000행</li>
+                    <li>• 8GB RAM: ~30,000행</li>
+                    <li>• 16GB RAM: ~60,000행</li>
+                    {systemMemory && (
+                      <li className="font-medium text-blue-600 dark:text-blue-400">
+                        → 감지된 메모리: {systemMemory}GB
+                      </li>
+                    )}
+                  </ul>
                 </div>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <Database className="h-8 w-8 text-primary mb-2" />
-                  <div className="text-2xl font-bold">100만+</div>
-                  <div className="text-sm text-muted-foreground">처리 가능 행</div>
-                </CardContent>
-              </Card>
               
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <FileText className="h-8 w-8 text-primary mb-2" />
-                  <div className="text-2xl font-bold">CSV/Excel</div>
-                  <div className="text-sm text-muted-foreground">지원 형식</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <Users className="h-8 w-8 text-primary mb-2" />
-                  <div className="text-2xl font-bold">연구자용</div>
-                  <div className="text-sm text-muted-foreground">전문가 수준</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="pt-6">
-                  <Award className="h-8 w-8 text-primary mb-2" />
-                  <div className="text-2xl font-bold">논문 인용</div>
-                  <div className="text-sm text-muted-foreground">가능한 품질</div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="py-12">
-              <div className="text-center space-y-6">
-                <h2 className="text-3xl font-bold">지금 바로 시작하세요</h2>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  복잡한 설치 없이, 회원가입 없이, 완전 무료로 전문가 수준의 통계 분석을 경험해보세요.
+              <div className="bg-yellow-100 dark:bg-yellow-900/20 rounded-lg p-3">
+                <p className="text-sm">
+                  <strong>💡 팁:</strong> 브라우저는 시스템 메모리의 25-50%만 사용 가능합니다.
+                  대용량 데이터는 샘플링하거나 필요한 컬럼만 선택하세요.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                  <Button 
-                    size="lg" 
-                    className="text-lg px-8 py-6"
-                    asChild
-                  >
-                    <a href="/smart-flow">
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      무료로 시작하기
-                    </a>
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="text-lg px-8 py-6"
-                    asChild
-                  >
-                    <a href="/help">
-                      사용 가이드 보기
-                    </a>
-                  </Button>
-                </div>
+              </div>
+              
+              <div className="text-sm text-center">
+                <a 
+                  href="/help#data-limits" 
+                  target="_blank"
+                  className="text-blue-600 hover:underline"
+                >
+                  자세한 도움말 보기 →
+                </a>
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* 분석 히스토리 패널 */}
+        {showHistory && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">📊 분석 히스토리</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHistory(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <AnalysisHistoryPanel />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Progress Stepper */}
+        <ProgressStepper 
+          steps={steps}
+          currentStep={currentStep}
+          completedSteps={completedSteps}
+          onStepClick={handleStepClick}
+        />
+
+        {/* 에러 메시지 표시 */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-red-600 dark:text-red-400 font-medium">오류:</span>
+              <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* 메인 콘텐츠 영역 */}
+        <Card className="border-2">
+          <CardHeader>
+            <div className="flex items-center space-x-3">
+              {(() => {
+                const Icon = steps[currentStep - 1].icon
+                return <Icon className="w-6 h-6 text-primary" />
+              })()}
+              <div>
+                <CardTitle>Step {currentStep}: {steps[currentStep - 1].name}</CardTitle>
+                <CardDescription>{steps[currentStep - 1].description}</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="min-h-[400px] relative">
+            {isLoading && (
+              <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="text-sm text-muted-foreground">처리 중...</span>
+                </div>
+              </div>
+            )}
+            
+            {currentStep === 1 && (
+              <div className="animate-in fade-in duration-500">
+                <DataUploadStep onUploadComplete={handleUploadComplete} />
+              </div>
+            )}
+
+            {currentStep === 2 && (
+              <div className="animate-in fade-in duration-500">
+                <DataValidationStep
+                  validationResults={validationResults}
+                  data={uploadedData}
+                />
+              </div>
+            )}
+
+            {currentStep === 3 && (
+              <div className="animate-in fade-in duration-500">
+                <PurposeInputStep
+                  onPurposeSubmit={handlePurposeSubmit}
+                />
+              </div>
+            )}
+
+            {currentStep === 4 && (
+              <div className="animate-in fade-in duration-500">
+                <AnalysisExecutionStep
+                  method={selectedMethod?.name || null}
+                  onAnalysisComplete={handleAnalysisComplete}
+                />
+              </div>
+            )}
+
+            {currentStep === 5 && (
+              <div className="animate-in fade-in duration-500">
+                <ResultsActionStep results={analysisResults} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 네비게이션 버튼 */}
+        <div className="flex justify-between">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={goToPreviousStep}
+              disabled={currentStep === 1 || isLoading}
+            >
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              이전 단계
+            </Button>
+            
+            {/* 초기화 버튼 - 언제든 처음부터 다시 시작 가능 */}
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (confirm('모든 데이터를 초기화하고 처음부터 다시 시작하시겠습니까?')) {
+                  reset()
+                  window.location.reload() // 완전 초기화
+                }
+              }}
+              disabled={isLoading}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              처음부터 다시
+            </Button>
+          </div>
+          
+          <Button 
+            onClick={goToNextStep}
+            disabled={currentStep === 5 || !canProceedToNext() || isLoading}
+          >
+            다음 단계
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
-      </section>
-      
-      {/* Upload Dialog */}
-      <SimpleUploadDialog 
-        open={uploadDialogOpen} 
-        onOpenChange={setUploadDialogOpen} 
-      />
+      </div>
     </div>
   )
 }

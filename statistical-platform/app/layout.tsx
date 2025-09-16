@@ -35,7 +35,15 @@ export default function RootLayout({
             <main className="container mx-auto px-4 py-6">
               {children}
             </main>
-            <Toaster />
+            <Toaster
+              position="top-center"
+              richColors
+              closeButton
+              duration={4000}
+              toastOptions={{
+                className: 'font-medium',
+              }}
+            />
           </div>
         </ThemeProvider>
       </body>

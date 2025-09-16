@@ -16,11 +16,27 @@ export interface StatisticalTestResult {
   confidenceInterval?: [number, number]
   interpretation: string
   isSignificant: boolean
+  assumptions?: Array<{
+    name: string
+    met: boolean
+    description: string
+    pValue?: number
+  }>
+  multipleComparisons?: {
+    method: string
+    originalPValue: number
+    adjustedPValue: number
+    isSignificantAfterCorrection: boolean
+    alpha: number
+    numberOfComparisons: number
+    correctionApplied: boolean
+  }
 }
 
 export interface CorrelationResult extends StatisticalTestResult {
   correlation: number
   rSquared: number
+  sampleSize?: number
 }
 
 export interface DescriptiveStatistics {
@@ -28,6 +44,7 @@ export interface DescriptiveStatistics {
   median: number
   mode: number | number[]
   std: number
+  standardDeviation: number
   variance: number
   skewness: number
   kurtosis: number
@@ -37,7 +54,9 @@ export interface DescriptiveStatistics {
   q3: number
   iqr: number
   cv: number
+  coefficientOfVariation: number
   sem: number
+  count: number
 }
 
 export interface MultipleComparisonsResult {
@@ -235,7 +254,7 @@ export class StatisticalGuideSystem {
       },
 
       reportingGuidance: {
-        apa: `${result.testName}, t(${result.degreesOfFreedom}) = ${result.testStatistic.toFixed(2)}, p = ${result.pValue.toFixed(3)}, Cohen's d = ${effectSize.toFixed(2)}, 95% CI [${result.confidenceInterval[0].toFixed(2)}, ${result.confidenceInterval[1].toFixed(2)}]`,
+        apa: `${result.testName}, t(${result.degreesOfFreedom}) = ${result.statistic?.toFixed(2) || 'N/A'}, p = ${result.pValue?.toFixed(3) || 'N/A'}, Cohen's d = ${effectSize?.toFixed(2) || 'N/A'}, 95% CI [${result.confidenceInterval?.[0]?.toFixed(2) || 'N/A'}, ${result.confidenceInterval?.[1]?.toFixed(2) || 'N/A'}]`,
         interpretation: isSignificant
           ? `분석 결과 두 그룹 간에 통계적으로 유의한 차이가 있는 것으로 나타났습니다. 효과 크기(${effectInterpretation})를 고려할 때 실질적으로도 의미 있는 차이라고 볼 수 있습니다.`
           : `분석 결과 두 그룹 간에 통계적으로 유의한 차이가 없는 것으로 나타났습니다. 다만 이는 차이가 없다는 의미가 아니라 현재 데이터로는 차이를 입증할 수 없다는 의미입니다.`,
@@ -319,7 +338,7 @@ export class StatisticalGuideSystem {
       },
 
       reportingGuidance: {
-        apa: `r(${result.sampleSize - 2}) = ${correlation.toFixed(2)}, p = ${result.pValue.toFixed(3)}, 95% CI [${result.confidenceInterval[0].toFixed(2)}, ${result.confidenceInterval[1].toFixed(2)}]`,
+        apa: `r(${(result.sampleSize || 0) - 2}) = ${correlation.toFixed(2)}, p = ${result.pValue.toFixed(3)}, 95% CI [${result.confidenceInterval?.[0]?.toFixed(2) || 'N/A'}, ${result.confidenceInterval?.[1]?.toFixed(2) || 'N/A'}]`,
         interpretation: isSignificant
           ? `분석 결과 두 변수 간에 ${strengthInterpretation} ${direction} 상관관계가 통계적으로 유의한 것으로 나타났습니다.`
           : `분석 결과 두 변수 간에 통계적으로 유의한 상관관계가 발견되지 않았습니다.`,
@@ -405,29 +424,35 @@ export class StatisticalGuideSystem {
 
   private static checkTTestAssumptions(result: StatisticalTestResult): { met: string[], violated: string[] } {
     // 실제로는 데이터를 분석해서 가정 검토해야 하지만, 여기서는 일반적인 가이드라인 제공
+    if (!result.assumptions) {
+      return { met: [], violated: [] }
+    }
+
     const met = result.assumptions.filter(a => a.met).map(a => a.description)
     const violated = result.assumptions.filter(a => !a.met).map(a => a.description)
-    
+
     return { met, violated }
   }
 
   private static getTTestRecommendations(result: StatisticalTestResult): string[] {
     const recommendations = []
-    
-    const normalityViolated = result.assumptions.some(a => 
-      a.description.includes('정규성') && !a.met
-    )
-    
-    if (normalityViolated) {
-      recommendations.push("정규성 가정 위반: Mann-Whitney U 검정 고려")
-    }
 
-    const equalVarianceViolated = result.assumptions.some(a => 
-      a.description.includes('등분산') && !a.met
-    )
-    
-    if (equalVarianceViolated) {
-      recommendations.push("등분산 가정 위반: Welch t-검정 사용 권장")
+    if (result.assumptions) {
+      const normalityViolated = result.assumptions.some(a =>
+        a.description.includes('정규성') && !a.met
+      )
+
+      if (normalityViolated) {
+        recommendations.push("정규성 가정 위반: Mann-Whitney U 검정 고려")
+      }
+
+      const equalVarianceViolated = result.assumptions.some(a =>
+        a.description.includes('등분산') && !a.met
+      )
+
+      if (equalVarianceViolated) {
+        recommendations.push("등분산 가정 위반: Welch t-검정 사용 권장")
+      }
     }
 
     if (recommendations.length === 0) {

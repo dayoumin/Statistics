@@ -504,7 +504,7 @@ interface DragDropProps {
 <a href="#main-content" className="skip-link">
   Skip to main content
 </a>
-```
+```하나먼 
 
 ## 반응형 디자인
 

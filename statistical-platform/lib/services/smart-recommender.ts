@@ -196,7 +196,7 @@ export class SmartRecommender {
   ): { methods: StatisticalMethod[]; matchScore: number } {
     // 기존 키워드 기반 로직 + 개선
     const methods: StatisticalMethod[] = []
-    let matchScore = 0
+    const matchScore = 0
 
     // ... 키워드 매칭 로직 ...
 

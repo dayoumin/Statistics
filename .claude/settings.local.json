@@ -16,7 +16,9 @@
       "Bash(npm test:*)",
       "Bash(node:*)",
       "Bash(curl:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(dir:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

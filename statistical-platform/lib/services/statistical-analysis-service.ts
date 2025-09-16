@@ -242,6 +242,313 @@ json.dumps(output)
   }
 
   /**
+   * 정규성 검정 (Shapiro-Wilk test)
+   */
+  async checkNormality(data: number[]): Promise<{
+    statistic: number
+    pValue: number
+    isNormal: boolean
+    interpretation: string
+  }> {
+    await this.initialize()
+    const pyodide = getPyodideInstance() as any
+
+    const pythonCode = `
+import numpy as np
+from scipy import stats
+import json
+
+data = np.array(${JSON.stringify(data)})
+
+# Shapiro-Wilk 검정
+statistic, p_value = stats.shapiro(data)
+
+# 정규성 판단 (유의수준 0.05)
+is_normal = p_value > 0.05
+
+# 해석
+if is_normal:
+    interpretation = f"데이터가 정규분포를 따릅니다 (W = {statistic:.4f}, p = {p_value:.4f} > 0.05)"
+else:
+    interpretation = f"데이터가 정규분포를 따르지 않습니다 (W = {statistic:.4f}, p = {p_value:.4f} < 0.05)"
+
+output = {
+    "statistic": float(statistic),
+    "pValue": float(p_value),
+    "isNormal": is_normal,
+    "interpretation": interpretation
+}
+
+json.dumps(output)
+`
+
+    const resultJson = await pyodide.runPythonAsync(pythonCode)
+    return JSON.parse(resultJson)
+  }
+
+  /**
+   * 등분산성 검정 (Levene's test)
+   */
+  async checkHomogeneity(
+    group1: number[],
+    group2: number[]
+  ): Promise<{
+    statistic: number
+    pValue: number
+    isHomogeneous: boolean
+    interpretation: string
+  }> {
+    await this.initialize()
+    const pyodide = getPyodideInstance() as any
+
+    const pythonCode = `
+import numpy as np
+from scipy import stats
+import json
+
+group1 = np.array(${JSON.stringify(group1)})
+group2 = np.array(${JSON.stringify(group2)})
+
+# Levene's test (center='median'이 더 robust)
+statistic, p_value = stats.levene(group1, group2, center='median')
+
+# 등분산성 판단 (유의수준 0.05)
+is_homogeneous = p_value > 0.05
+
+# 해석
+if is_homogeneous:
+    interpretation = f"두 그룹의 분산이 같습니다 (F = {statistic:.4f}, p = {p_value:.4f} > 0.05)"
+else:
+    interpretation = f"두 그룹의 분산이 다릅니다 (F = {statistic:.4f}, p = {p_value:.4f} < 0.05)"
+
+output = {
+    "statistic": float(statistic),
+    "pValue": float(p_value),
+    "isHomogeneous": is_homogeneous,
+    "interpretation": interpretation
+}
+
+json.dumps(output)
+`
+
+    const resultJson = await pyodide.runPythonAsync(pythonCode)
+    return JSON.parse(resultJson)
+  }
+
+  /**
+   * 모든 가정 검정 수행 (자동)
+   */
+  async performAllAssumptionTests(
+    data1: number[],
+    data2: number[],
+    testType: 'ttest' | 'anova' | 'regression' | 'correlation' = 'ttest'
+  ): Promise<{
+    normality?: { group1: any, group2: any }
+    homogeneity?: any
+    independence?: any
+    linearity?: any
+    outliers?: any
+    sampleSize?: any
+    multicollinearity?: any
+  }> {
+    await this.initialize()
+    const pyodide = getPyodideInstance() as any
+
+    const pythonCode = `
+import numpy as np
+from scipy import stats
+import json
+import warnings
+warnings.filterwarnings('ignore')
+
+data1 = np.array(${JSON.stringify(data1)})
+data2 = np.array(${JSON.stringify(data2)})
+test_type = "${testType}"
+
+results = {}
+
+# 1. 정규성 검정 (Shapiro-Wilk + Kolmogorov-Smirnov)
+def check_normality(data, group_name):
+    n = len(data)
+    
+    # Shapiro-Wilk (n < 5000)
+    if n < 5000:
+        sw_stat, sw_p = stats.shapiro(data)
+        method = "Shapiro-Wilk"
+    else:
+        # Kolmogorov-Smirnov for large samples
+        ks_stat, ks_p = stats.kstest(data, 'norm', args=(np.mean(data), np.std(data)))
+        sw_stat, sw_p = ks_stat, ks_p
+        method = "Kolmogorov-Smirnov"
+    
+    # Anderson-Darling test 추가
+    ad_result = stats.anderson(data, dist='norm')
+    
+    # D'Agostino-Pearson test 추가
+    if n > 8:
+        k2_stat, k2_p = stats.normaltest(data)
+    else:
+        k2_stat, k2_p = None, None
+    
+    is_normal = sw_p > 0.05
+    
+    return {
+        "method": method,
+        "statistic": float(sw_stat),
+        "pValue": float(sw_p),
+        "isNormal": is_normal,
+        "andersonStat": float(ad_result.statistic),
+        "dagostinoPValue": float(k2_p) if k2_p else None,
+        "skewness": float(stats.skew(data)),
+        "kurtosis": float(stats.kurtosis(data)),
+        "interpretation": f"정규분포 {'만족' if is_normal else '위반'} ({method} p={sw_p:.4f})"
+    }
+
+results["normality"] = {
+    "group1": check_normality(data1, "Group 1"),
+    "group2": check_normality(data2, "Group 2")
+}
+
+# 2. 등분산성 검정 (Levene + Bartlett + F-test)
+if test_type in ["ttest", "anova"]:
+    # Levene's test (robust)
+    lev_stat, lev_p = stats.levene(data1, data2, center='median')
+    
+    # Bartlett's test (정규성 가정)
+    bart_stat, bart_p = stats.bartlett(data1, data2)
+    
+    # F-test
+    var1, var2 = np.var(data1, ddof=1), np.var(data2, ddof=1)
+    f_stat = var1 / var2 if var1 > var2 else var2 / var1
+    df1, df2 = len(data1) - 1, len(data2) - 1
+    f_p = 2 * min(stats.f.cdf(f_stat, df1, df2), 1 - stats.f.cdf(f_stat, df1, df2))
+    
+    is_homogeneous = lev_p > 0.05
+    
+    results["homogeneity"] = {
+        "levene": {"statistic": float(lev_stat), "pValue": float(lev_p)},
+        "bartlett": {"statistic": float(bart_stat), "pValue": float(bart_p)},
+        "fTest": {"statistic": float(f_stat), "pValue": float(f_p)},
+        "isHomogeneous": is_homogeneous,
+        "varianceRatio": float(var1/var2),
+        "interpretation": f"등분산성 {'만족' if is_homogeneous else '위반'} (Levene p={lev_p:.4f})"
+    }
+
+# 3. 독립성 검정 (Durbin-Watson for residuals)
+if test_type in ["regression"]:
+    # 간단한 선형회귀로 잔차 계산
+    slope, intercept, _, _, _ = stats.linregress(data1, data2)
+    predicted = slope * data1 + intercept
+    residuals = data2 - predicted
+    
+    # Durbin-Watson statistic
+    diff_resid = np.diff(residuals)
+    dw_stat = np.sum(diff_resid**2) / np.sum(residuals**2)
+    
+    # 일반적으로 1.5 < DW < 2.5면 독립성 만족
+    is_independent = 1.5 < dw_stat < 2.5
+    
+    results["independence"] = {
+        "durbinWatson": float(dw_stat),
+        "isIndependent": is_independent,
+        "interpretation": f"잔차 독립성 {'만족' if is_independent else '위반'} (DW={dw_stat:.3f})"
+    }
+
+# 4. 선형성 검정 (회귀/상관분석)
+if test_type in ["regression", "correlation"]:
+    # 상관계수와 결정계수
+    r, p = stats.pearsonr(data1, data2)
+    r_squared = r**2
+    
+    # 스피어만 순위상관 (비선형 관계 감지)
+    rho, rho_p = stats.spearmanr(data1, data2)
+    
+    # 선형성 판단: Pearson과 Spearman 상관계수 차이
+    linearity_diff = abs(r - rho)
+    is_linear = linearity_diff < 0.1 and r_squared > 0.1
+    
+    results["linearity"] = {
+        "pearsonR": float(r),
+        "spearmanRho": float(rho),
+        "rSquared": float(r_squared),
+        "difference": float(linearity_diff),
+        "isLinear": is_linear,
+        "interpretation": f"선형 관계 {'있음' if is_linear else '약함'} (R²={r_squared:.3f})"
+    }
+
+# 5. 이상치 검정 (IQR method + Z-score)
+def detect_outliers(data):
+    q1, q3 = np.percentile(data, [25, 75])
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+    
+    # IQR method
+    outliers_iqr = np.where((data < lower_bound) | (data > upper_bound))[0]
+    
+    # Z-score method (|z| > 3)
+    z_scores = np.abs(stats.zscore(data))
+    outliers_zscore = np.where(z_scores > 3)[0]
+    
+    # Grubbs test for single outlier
+    if len(data) > 2:
+        z_max = max(np.abs(data - np.mean(data))) / np.std(data)
+        n = len(data)
+        t_dist = stats.t.ppf(1 - 0.05/(2*n), n-2)
+        g_critical = ((n-1)/np.sqrt(n)) * np.sqrt(t_dist**2 / (n-2 + t_dist**2))
+        has_grubbs_outlier = z_max > g_critical
+    else:
+        has_grubbs_outlier = False
+    
+    return {
+        "iqrMethod": len(outliers_iqr),
+        "zScoreMethod": len(outliers_zscore),
+        "grubbsTest": has_grubbs_outlier,
+        "outlierIndices": outliers_iqr.tolist(),
+        "hasOutliers": len(outliers_iqr) > 0
+    }
+
+results["outliers"] = {
+    "group1": detect_outliers(data1),
+    "group2": detect_outliers(data2),
+    "interpretation": "이상치 탐지 완료"
+}
+
+# 6. 표본 크기 적절성 
+n1, n2 = len(data1), len(data2)
+min_sample = 30  # 중심극한정리
+
+# Cohen's d 계산 (효과크기)
+pooled_std = np.sqrt(((n1-1)*np.var(data1, ddof=1) + (n2-1)*np.var(data2, ddof=1)) / (n1+n2-2))
+cohens_d = abs(np.mean(data1) - np.mean(data2)) / pooled_std if pooled_std > 0 else 0
+
+# 검정력 계산 (근사)
+from math import sqrt
+if cohens_d > 0 and n1 > 1 and n2 > 1:
+    # 간단한 사후 검정력 계산
+    delta = cohens_d * sqrt(n1*n2/(n1+n2))
+    # 근사 검정력 (정규분포 기반)
+    power = 1 - stats.norm.cdf(1.96 - delta) if delta > 0 else 0.05
+else:
+    power = None
+
+results["sampleSize"] = {
+    "group1Size": n1,
+    "group2Size": n2,
+    "isAdequate": n1 >= min_sample and n2 >= min_sample,
+    "cohensD": float(cohens_d) if cohens_d else 0,
+    "estimatedPower": float(power) if power else None,
+    "interpretation": f"표본 크기 {'적절' if n1 >= min_sample and n2 >= min_sample else '부족'} (n1={n1}, n2={n2})"
+}
+
+json.dumps(results)
+`
+
+    const resultJson = await pyodide.runPythonAsync(pythonCode)
+    return JSON.parse(resultJson)
+  }
+
+  /**
    * ANOVA 분석
    */
   async performANOVA(groups: number[][]): Promise<AnalysisResult> {

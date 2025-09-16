@@ -3,19 +3,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, ChevronLeft, Upload, CheckCircle, BarChart3, FileText, Sparkles, HelpCircle, X } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Upload, CheckCircle, BarChart3, FileText, Sparkles, HelpCircle, X, Clock } from 'lucide-react'
 import { ProgressStepper } from '@/components/smart-flow/ProgressStepper'
 import { DataUploadStep } from '@/components/smart-flow/steps/DataUploadStep'
 import { DataValidationStep } from '@/components/smart-flow/steps/DataValidationStep'
-import { PurposeInputStepWithModes } from '@/components/smart-flow/steps/PurposeInputStep-with-modes'
+import { PurposeInputStep } from '@/components/smart-flow/steps/PurposeInputStep'
 import { AnalysisExecutionStep } from '@/components/smart-flow/steps/AnalysisExecutionStep'
 import { ResultsActionStep } from '@/components/smart-flow/steps/ResultsActionStep'
+import { AnalysisHistoryPanel } from '@/components/smart-flow/AnalysisHistoryPanel'
 import { useSmartFlowStore } from '@/lib/stores/smart-flow-store'
-import { 
-  StepConfig, 
-  ValidationResults, 
-  StatisticalMethod, 
-  AnalysisResult 
+import { DataValidationService } from '@/lib/services/data-validation-service'
+import {
+  StepConfig,
+  ValidationResults,
+  StatisticalMethod,
+  AnalysisResult,
+  DataRow
 } from '@/types/smart-flow'
 
 const steps: StepConfig[] = [
@@ -28,14 +31,20 @@ const steps: StepConfig[] = [
 
 export default function SmartFlowPageRefactored() {
   const [showHelp, setShowHelp] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [systemMemory, setSystemMemory] = useState<number | null>(null)
   
   // 시스템 메모리 감지 (Navigator API)
   useEffect(() => {
-    // @ts-ignore - Navigator.deviceMemory는 실험적 기능
-    if (typeof navigator !== 'undefined' && navigator.deviceMemory) {
-      // @ts-ignore
-      setSystemMemory(navigator.deviceMemory) // GB 단위
+    interface NavigatorWithMemory extends Navigator {
+      deviceMemory?: number
+    }
+
+    if (typeof navigator !== 'undefined') {
+      const nav = navigator as NavigatorWithMemory
+      if (nav.deviceMemory) {
+        setSystemMemory(nav.deviceMemory) // GB 단위
+      }
     }
   }, [])
   
@@ -62,14 +71,16 @@ export default function SmartFlowPageRefactored() {
     goToNextStep,
     goToPreviousStep,
     addCompletedStep,
-    reset
+    reset,
+    navigateToStep,
+    canNavigateToStep
   } = useSmartFlowStore()
 
   const handleStepClick = useCallback((stepId: number) => {
-    if (stepId <= Math.max(...completedSteps, 1)) {
-      setCurrentStep(stepId)
+    if (canNavigateToStep(stepId)) {
+      navigateToStep(stepId)
     }
-  }, [completedSteps, setCurrentStep])
+  }, [canNavigateToStep, navigateToStep])
 
   const handleUploadComplete = useCallback((file: File, data: any[]) => {
     try {
@@ -100,125 +111,15 @@ export default function SmartFlowPageRefactored() {
     goToNextStep()
   }, [setAnalysisResults, goToNextStep])
 
-  // 향상된 데이터 검증 함수
-  const performDataValidation = (data: any[]): ValidationResults => {
-    const validation: ValidationResults = {
-      isValid: true,
-      totalRows: data.length,
-      columnCount: data.length > 0 ? Object.keys(data[0]).length : 0,
-      missingValues: 0,
-      dataType: '수치형',
-      variables: data.length > 0 ? Object.keys(data[0]) : [],
-      errors: [],
-      warnings: []
-    }
-    
-    // 데이터 크기 제한 상수
-    const MAX_ROWS = 100000  // 10만 행 제한 (브라우저 메모리 고려)
-    const MAX_COLS = 1000    // 1000개 컬럼 제한
-    const WARN_ROWS = 10000  // 1만 행 이상 시 경고
-    const MIN_ROWS = 3       // 최소 3개 행 필요
-    
-    // 1. 데이터 크기 검증
-    if (data.length === 0) {
-      validation.errors.push('데이터가 비어있습니다')
-      validation.isValid = false
-    } else if (data.length < MIN_ROWS) {
-      validation.warnings.push(`데이터가 ${MIN_ROWS}개 미만입니다. 통계 분석이 제한될 수 있습니다.`)
-    } else if (data.length > MAX_ROWS) {
-      validation.errors.push(`데이터가 ${MAX_ROWS.toLocaleString()}행을 초과합니다. 브라우저 성능 문제로 처리할 수 없습니다.`)
-      validation.isValid = false
-    } else if (data.length > WARN_ROWS) {
-      validation.warnings.push(`데이터가 ${WARN_ROWS.toLocaleString()}행 이상입니다. 처리 시간이 길어질 수 있습니다.`)
-    }
-    
-    // 컬럼 수 검증
-    if (validation.columnCount > MAX_COLS) {
-      validation.errors.push(`컬럼이 ${MAX_COLS}개를 초과합니다. 데이터를 줄여주세요.`)
-      validation.isValid = false
-    } else if (validation.columnCount > 100) {
-      validation.warnings.push('컬럼이 100개 이상입니다. 분석에 필요한 컬럼만 선택하는 것을 권장합니다.')
-    }
-    
-    // 2. 결측값 검사
-    let missingCount = 0
-    data.forEach((row, rowIdx) => {
-      Object.entries(row).forEach(([key, value]) => {
-        if (value === null || value === undefined || value === '') {
-          missingCount++
-        }
-      })
-    })
-    validation.missingValues = missingCount
-    
-    if (missingCount > 0) {
-      const missingRatio = missingCount / (data.length * validation.columnCount)
-      if (missingRatio > 0.2) {
-        validation.warnings.push(`결측값이 ${(missingRatio * 100).toFixed(1)}% 있습니다. 데이터 품질을 확인하세요.`)
-      }
-    }
-    
-    // 3. 데이터 타입 검사
-    const numericColumns: string[] = []
-    const categoricalColumns: string[] = []
-    
-    if (data.length > 0) {
-      Object.keys(data[0]).forEach(col => {
-        const values = data.map(row => row[col]).filter(v => v !== null && v !== undefined && v !== '')
-        const isNumeric = values.every(v => !isNaN(Number(v)))
-        
-        if (isNumeric) {
-          numericColumns.push(col)
-        } else {
-          categoricalColumns.push(col)
-        }
-      })
-    }
-    
-    if (numericColumns.length === 0) {
-      validation.warnings.push('수치형 데이터가 없습니다. 통계 분석이 제한될 수 있습니다.')
-    }
-    
-    // 4. 이상치 검사 (간단한 IQR 방법)
-    numericColumns.forEach(col => {
-      const values = data.map(row => Number(row[col])).filter(v => !isNaN(v)).sort((a, b) => a - b)
-      if (values.length > 4) {
-        const q1 = values[Math.floor(values.length * 0.25)]
-        const q3 = values[Math.floor(values.length * 0.75)]
-        const iqr = q3 - q1
-        const lowerBound = q1 - 1.5 * iqr
-        const upperBound = q3 + 1.5 * iqr
-        
-        const outliers = values.filter(v => v < lowerBound || v > upperBound)
-        if (outliers.length > 0) {
-          validation.warnings.push(`'${col}' 컬럼에 ${outliers.length}개의 이상치가 감지되었습니다.`)
-        }
-      }
-    })
-    
-    return validation
+  // 데이터 검증 수행
+  const performDataValidation = (data: DataRow[]): ValidationResults => {
+    return DataValidationService.performValidation(data)
   }
   
   // 데이터 정보 추출 (PurposeInputStep에 전달용)
   const getDataInfo = () => {
-    if (!uploadedData || uploadedData.length === 0) return null
-    
-    const numericColumns = Object.keys(uploadedData[0]).filter(col => {
-      const values = uploadedData.map(row => row[col]).filter(v => v !== null && v !== undefined && v !== '')
-      return values.every(v => !isNaN(Number(v)))
-    })
-    
-    const categoricalColumns = Object.keys(uploadedData[0]).filter(col => {
-      const values = uploadedData.map(row => row[col]).filter(v => v !== null && v !== undefined && v !== '')
-      return !values.every(v => !isNaN(Number(v)))
-    })
-    
-    return {
-      columnCount: Object.keys(uploadedData[0]).length,
-      rowCount: uploadedData.length,
-      hasNumeric: numericColumns.length > 0,
-      hasCategorical: categoricalColumns.length > 0
-    }
+    if (!uploadedData) return null
+    return DataValidationService.getDataInfo(uploadedData)
   }
 
   return (
@@ -231,16 +132,25 @@ export default function SmartFlowPageRefactored() {
             단계별 안내를 따라 쉽고 정확한 통계 분석을 진행하세요
           </p>
           
-          {/* 도움말 버튼 */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowHelp(!showHelp)}
-            className="absolute right-0 top-0"
-          >
-            <HelpCircle className="w-4 h-4 mr-2" />
-            데이터 제한 안내
-          </Button>
+          {/* 액션 버튼들 */}
+          <div className="absolute right-0 top-0 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              분석 히스토리
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowHelp(!showHelp)}
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              데이터 제한 안내
+            </Button>
+          </div>
         </div>
         
         {/* 도움말 패널 */}
@@ -303,6 +213,27 @@ export default function SmartFlowPageRefactored() {
           </Card>
         )}
 
+        {/* 분석 히스토리 패널 */}
+        {showHistory && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg">📊 분석 히스토리</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHistory(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <AnalysisHistoryPanel />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress Stepper */}
         <ProgressStepper 
           steps={steps}
@@ -347,32 +278,41 @@ export default function SmartFlowPageRefactored() {
             )}
             
             {currentStep === 1 && (
-              <DataUploadStep onUploadComplete={handleUploadComplete} />
+              <div className="animate-in fade-in duration-500">
+                <DataUploadStep onUploadComplete={handleUploadComplete} />
+              </div>
             )}
 
             {currentStep === 2 && (
-              <DataValidationStep 
-                validationResults={validationResults}
-                data={uploadedData}
-              />
+              <div className="animate-in fade-in duration-500">
+                <DataValidationStep
+                  validationResults={validationResults}
+                  data={uploadedData}
+                />
+              </div>
             )}
 
             {currentStep === 3 && (
-              <PurposeInputStepWithModes 
-                onPurposeSubmit={handlePurposeSubmit}
-                dataInfo={getDataInfo()}
-              />
+              <div className="animate-in fade-in duration-500">
+                <PurposeInputStep
+                  onPurposeSubmit={handlePurposeSubmit}
+                />
+              </div>
             )}
 
             {currentStep === 4 && (
-              <AnalysisExecutionStep 
-                method={selectedMethod?.name || null}
-                onAnalysisComplete={handleAnalysisComplete}
-              />
+              <div className="animate-in fade-in duration-500">
+                <AnalysisExecutionStep
+                  method={selectedMethod?.name || null}
+                  onAnalysisComplete={handleAnalysisComplete}
+                />
+              </div>
             )}
 
             {currentStep === 5 && (
-              <ResultsActionStep results={analysisResults} />
+              <div className="animate-in fade-in duration-500">
+                <ResultsActionStep results={analysisResults} />
+              </div>
             )}
           </CardContent>
         </Card>

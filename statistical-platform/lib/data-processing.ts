@@ -370,7 +370,7 @@ export function validateData(headers: string[], rows: Record<string, unknown>[])
     const type = typeAnalysis.detectedType === 'mixed' ? 'text' : typeAnalysis.detectedType
     
     let summary: DataColumn['summary'] = undefined
-    let dataQuality: DataColumn['dataQuality'] = {
+    const dataQuality: DataColumn['dataQuality'] = {
       typeConsistency: typeAnalysis.detectedType !== 'mixed',
       issues: [...typeAnalysis.issues]
     }

@@ -21,7 +21,7 @@ export interface ValidationResults {
 export interface AnalysisConfig {
   purpose: string
   selectedMethod: StatisticalMethod | null
-  parameters?: Record<string, any>
+  parameters?: Record<string, string | number | boolean>
 }
 
 export interface StatisticalMethod {
@@ -42,6 +42,32 @@ export interface AnalysisResult {
   }
   interpretation: string
   nextActions?: NextAction[]
+  assumptions?: {
+    normality?: {
+      group1: {
+        statistic: number
+        pValue: number
+        isNormal: boolean
+        interpretation: string
+      }
+      group2: {
+        statistic: number
+        pValue: number
+        isNormal: boolean
+        interpretation: string
+      }
+    }
+    homogeneity?: {
+      statistic: number
+      pValue: number
+      isHomogeneous: boolean
+      interpretation: string
+    }
+  }
+  additional?: {
+    intercept?: number
+    rmse?: number
+  }
 }
 
 export interface NextAction {
@@ -52,11 +78,15 @@ export interface NextAction {
   action: () => void
 }
 
+export interface DataRow {
+  [columnName: string]: string | number | null | undefined
+}
+
 export interface SmartFlowState {
   currentStep: number
   completedSteps: number[]
   uploadedFile: File | null
-  uploadedData: any[] | null
+  uploadedData: DataRow[] | null
   validationResults: ValidationResults | null
   analysisConfig: AnalysisConfig | null
   analysisResults: AnalysisResult | null
