@@ -77,24 +77,29 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   
-  /* Statistical Platform Custom Variables */
-  --success: oklch(0.7 0.17 145);
-  --success-foreground: oklch(1 0 0);
-  --warning: oklch(0.85 0.15 85);
-  --warning-foreground: oklch(0.2 0 0);
-  --info: oklch(0.65 0.15 220);
-  --info-foreground: oklch(1 0 0);
+  /* Perplexity-inspired Statistical Platform Variables */
+  --primary: oklch(0.488 0.243 264.376);  /* Perplexity Purple */
+  --primary-foreground: oklch(1 0 0);
+  --accent: oklch(0.7 0.15 193);          /* Subtle Cyan accent */
+  --accent-foreground: oklch(0.1 0 0);
   
-  /* Statistical Analysis Colors */
-  --stat-significant: oklch(0.6 0.2 145);    /* Green for p < 0.05 */
-  --stat-non-significant: oklch(0.6 0.1 15); /* Orange for p >= 0.05 */
-  --stat-highly-significant: oklch(0.5 0.25 145); /* Dark green for p < 0.01 */
+  /* Monochrome Success States (Perplexity style) */
+  --success: oklch(0.3 0 0);              /* Dark gray for success */
+  --success-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.5 0 0);              /* Medium gray for warning */
+  --warning-foreground: oklch(0.98 0 0);
+  --info: oklch(0.4 0 0);                 /* Dark gray for info */
+  --info-foreground: oklch(0.98 0 0);
   
-  /* Difficulty Level Colors */
-  --difficulty-beginner: oklch(0.7 0.15 120);
-  --difficulty-intermediate: oklch(0.75 0.18 80);
-  --difficulty-advanced: oklch(0.65 0.2 40);
-  --difficulty-expert: oklch(0.55 0.22 15);
+  /* Statistical Analysis Colors - Minimal */
+  --stat-significant: oklch(0.3 0 0);      /* Dark gray for significance */
+  --stat-non-significant: oklch(0.6 0 0);  /* Medium gray for non-sig */
+  --stat-highly-significant: oklch(0.1 0 0); /* Very dark gray */
+  
+  /* Minimal Category Colors */
+  --category-primary: oklch(0.488 0.243 264.376);
+  --category-muted: oklch(0.7 0 0);
+  --category-subtle: oklch(0.9 0 0);
   
   /* Data Status Colors */
   --data-active: oklch(0.65 0.15 145);
@@ -328,5 +333,33 @@
   
   .difficulty-badge {
     @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  /* Blob animations for hero section */
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+  
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
   }
 }

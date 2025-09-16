@@ -1,0 +1,280 @@
+/**
+ * 스마트 통계 방법 추천 시스템
+ * 키워드 + 데이터 특성 + 신뢰도 점수 기반
+ */
+
+import { StatisticalMethod } from '@/types/smart-flow'
+
+interface RecommendationResult {
+  methods: StatisticalMethod[]
+  confidence: 'high' | 'medium' | 'low'
+  warnings: string[]
+  alternativeSuggestion?: string
+}
+
+interface AnalysisContext {
+  purposeText: string
+  dataShape: {
+    rows: number
+    columns: number
+    columnTypes: ('numeric' | 'categorical' | 'datetime' | 'text')[]
+    columnNames: string[]
+  }
+  dataQuality: {
+    missingRatio: number
+    outlierRatio: number
+    isNormallyDistributed?: boolean
+  }
+}
+
+export class SmartRecommender {
+  /**
+   * 메인 추천 함수 - 다층 분석 수행
+   */
+  static recommend(context: AnalysisContext): RecommendationResult {
+    const result: RecommendationResult = {
+      methods: [],
+      confidence: 'low',
+      warnings: [],
+      alternativeSuggestion: undefined
+    }
+
+    // 1단계: 텍스트 명확성 검사
+    const clarity = this.assessTextClarity(context.purposeText)
+    
+    if (clarity.score < 0.3) {
+      result.warnings.push('입력하신 분석 목적이 모호합니다. 더 구체적으로 작성해주세요.')
+      result.alternativeSuggestion = this.suggestClarification(context)
+      result.confidence = 'low'
+    }
+
+    // 2단계: 모순 검사
+    const contradictions = this.detectContradictions(context)
+    if (contradictions.length > 0) {
+      result.warnings.push(...contradictions)
+    }
+
+    // 3단계: 데이터-목적 일치성 검사
+    const compatibility = this.checkDataPurposeCompatibility(context)
+    if (!compatibility.isCompatible) {
+      result.warnings.push(compatibility.reason)
+      result.confidence = 'low'
+    }
+
+    // 4단계: 실제 추천
+    const recommendations = this.generateRecommendations(context)
+    result.methods = recommendations.methods
+    
+    // 5단계: 신뢰도 계산
+    result.confidence = this.calculateConfidence(
+      clarity.score,
+      contradictions.length,
+      compatibility.score,
+      recommendations.matchScore
+    )
+
+    // 6단계: 대안 제시
+    if (result.confidence === 'low') {
+      result.alternativeSuggestion = this.generateAlternative(context)
+    }
+
+    return result
+  }
+
+  /**
+   * 텍스트 명확성 평가
+   */
+  private static assessTextClarity(text: string): { score: number; issues: string[] } {
+    const issues: string[] = []
+    let score = 1.0
+
+    // 너무 짧은 텍스트
+    if (text.length < 10) {
+      issues.push('텍스트가 너무 짧습니다')
+      score -= 0.5
+    }
+
+    // 모호한 표현들
+    const vagueTerms = ['이거', '그거', '저거', '뭔가', '좀', '대충', '그냥']
+    const foundVague = vagueTerms.filter(term => text.includes(term))
+    if (foundVague.length > 0) {
+      issues.push(`모호한 표현 발견: ${foundVague.join(', ')}`)
+      score -= 0.2 * foundVague.length
+    }
+
+    // 질문 형식이 아닌 경우
+    const hasQuestionWords = ['차이', '관계', '영향', '비교', '변화', '효과'].some(
+      word => text.includes(word)
+    )
+    if (!hasQuestionWords) {
+      issues.push('분석 목적이 불명확합니다')
+      score -= 0.3
+    }
+
+    return { score: Math.max(0, score), issues }
+  }
+
+  /**
+   * 모순 검출
+   */
+  private static detectContradictions(context: AnalysisContext): string[] {
+    const contradictions: string[] = []
+    const text = context.purposeText.toLowerCase()
+
+    // 예시: 두 그룹 비교인데 데이터가 하나뿐
+    if (text.includes('두') || text.includes('비교')) {
+      const categoricalCols = context.dataShape.columnTypes.filter(t => t === 'categorical')
+      if (categoricalCols.length === 0) {
+        contradictions.push('그룹 비교를 원하시나 범주형 변수가 없습니다.')
+      }
+    }
+
+    // 예시: 상관분석인데 변수가 하나
+    if (text.includes('상관') || text.includes('관계')) {
+      const numericCols = context.dataShape.columnTypes.filter(t => t === 'numeric')
+      if (numericCols.length < 2) {
+        contradictions.push('상관분석에는 최소 2개의 수치형 변수가 필요합니다.')
+      }
+    }
+
+    // 예시: 시계열 분석인데 시간 변수 없음
+    if (text.includes('시간') || text.includes('추세') || text.includes('변화')) {
+      const hasDateTime = context.dataShape.columnTypes.includes('datetime')
+      if (!hasDateTime && !text.includes('전후')) {
+        contradictions.push('시간 분석을 원하시나 날짜/시간 변수가 없습니다.')
+      }
+    }
+
+    return contradictions
+  }
+
+  /**
+   * 데이터-목적 호환성 검사
+   */
+  private static checkDataPurposeCompatibility(
+    context: AnalysisContext
+  ): { isCompatible: boolean; score: number; reason: string } {
+    const { dataShape, dataQuality } = context
+    
+    // 샘플 크기 검사
+    if (dataShape.rows < 5) {
+      return {
+        isCompatible: false,
+        score: 0,
+        reason: '데이터가 너무 적습니다 (최소 5개 이상 필요)'
+      }
+    }
+
+    // 결측값 비율 검사
+    if (dataQuality.missingRatio > 0.5) {
+      return {
+        isCompatible: false,
+        score: 0.3,
+        reason: '결측값이 50% 이상입니다. 데이터 정제가 필요합니다.'
+      }
+    }
+
+    // 정규성 검사 (t-test 관련)
+    if (context.purposeText.includes('t검정') || context.purposeText.includes('평균')) {
+      if (dataShape.rows < 30 && !dataQuality.isNormallyDistributed) {
+        return {
+          isCompatible: true,
+          score: 0.7,
+          reason: '샘플이 작고 정규분포가 아닙니다. 비모수 검정을 고려하세요.'
+        }
+      }
+    }
+
+    return { isCompatible: true, score: 1.0, reason: '' }
+  }
+
+  /**
+   * 실제 추천 생성
+   */
+  private static generateRecommendations(
+    context: AnalysisContext
+  ): { methods: StatisticalMethod[]; matchScore: number } {
+    // 기존 키워드 기반 로직 + 개선
+    const methods: StatisticalMethod[] = []
+    let matchScore = 0
+
+    // ... 키워드 매칭 로직 ...
+
+    // 데이터 기반 보정
+    if (context.dataShape.rows < 30) {
+      // 비모수 검정 우선
+      methods.unshift({
+        id: 'nonparametric',
+        name: '비모수 검정 권장',
+        description: '작은 샘플에 적합',
+        category: 'nonparametric'
+      })
+    }
+
+    return { methods, matchScore }
+  }
+
+  /**
+   * 신뢰도 계산
+   */
+  private static calculateConfidence(
+    clarityScore: number,
+    contradictionCount: number,
+    compatibilityScore: number,
+    matchScore: number
+  ): 'high' | 'medium' | 'low' {
+    const totalScore = (clarityScore + compatibilityScore + matchScore) / 3 
+                      - (contradictionCount * 0.2)
+
+    if (totalScore > 0.7) return 'high'
+    if (totalScore > 0.4) return 'medium'
+    return 'low'
+  }
+
+  /**
+   * 명확한 입력 제안
+   */
+  private static suggestClarification(context: AnalysisContext): string {
+    const suggestions: string[] = []
+    const numericCols = context.dataShape.columnNames.filter((_, i) => 
+      context.dataShape.columnTypes[i] === 'numeric'
+    )
+    const categoricalCols = context.dataShape.columnNames.filter((_, i) => 
+      context.dataShape.columnTypes[i] === 'categorical'
+    )
+
+    if (numericCols.length >= 2) {
+      suggestions.push(`"${numericCols[0]}와 ${numericCols[1]}의 관계를 알고 싶어요"`)
+    }
+    
+    if (categoricalCols.length > 0 && numericCols.length > 0) {
+      suggestions.push(`"${categoricalCols[0]}별 ${numericCols[0]} 차이를 비교하고 싶어요"`)
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push("데이터의 전반적인 특성을 파악하고 싶어요")
+    }
+
+    return `예시: ${suggestions.join(' 또는 ')}`
+  }
+
+  /**
+   * 대안 생성
+   */
+  private static generateAlternative(context: AnalysisContext): string {
+    const alternatives: string[] = []
+
+    // 탐색적 데이터 분석 제안
+    alternatives.push('먼저 기술통계로 데이터를 탐색해보세요')
+
+    // 데이터 품질 개선 제안
+    if (context.dataQuality.missingRatio > 0.2) {
+      alternatives.push('결측값 처리 후 분석을 진행하세요')
+    }
+
+    // 시각화 제안
+    alternatives.push('산점도나 박스플롯으로 데이터를 시각화해보세요')
+
+    return alternatives.join('. ')
+  }
+}

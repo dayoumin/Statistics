@@ -1,0 +1,385 @@
+/**
+ * 통계 분석 서비스
+ * Pyodide를 사용하여 실제 통계 분석을 수행
+ */
+
+import { loadPyodideRuntime, getPyodideInstance, isPyodideReady } from '@/lib/pyodide-runtime-loader'
+import { StatisticalMethod, AnalysisResult } from '@/types/smart-flow'
+
+export class StatisticalAnalysisService {
+  private static instance: StatisticalAnalysisService | null = null
+
+  private constructor() {}
+
+  static getInstance(): StatisticalAnalysisService {
+    if (!this.instance) {
+      this.instance = new StatisticalAnalysisService()
+    }
+    return this.instance
+  }
+
+  /**
+   * Pyodide 초기화
+   */
+  async initialize(): Promise<void> {
+    if (!isPyodideReady()) {
+      await loadPyodideRuntime()
+    }
+  }
+
+  /**
+   * t-검정 수행
+   */
+  async performTTest(
+    data1: number[],
+    data2: number[],
+    type: 'independent' | 'paired' = 'independent'
+  ): Promise<AnalysisResult> {
+    await this.initialize()
+    const pyodide = getPyodideInstance() as any
+
+    const pythonCode = `
+import numpy as np
+from scipy import stats
+import json
+
+data1 = np.array(${JSON.stringify(data1)})
+data2 = np.array(${JSON.stringify(data2)})
+
+# t-검정 수행
+if "${type}" == "independent":
+    result = stats.ttest_ind(data1, data2)
+    test_name = "독립표본 t-검정"
+else:
+    result = stats.ttest_rel(data1, data2)
+    test_name = "대응표본 t-검정"
+
+# 효과크기 계산 (Cohen's d)
+pooled_std = np.sqrt((np.std(data1)**2 + np.std(data2)**2) / 2)
+cohens_d = (np.mean(data1) - np.mean(data2)) / pooled_std
+
+# 95% 신뢰구간
+mean_diff = np.mean(data1) - np.mean(data2)
+se = pooled_std * np.sqrt(1/len(data1) + 1/len(data2))
+ci_lower = mean_diff - 1.96 * se
+ci_upper = mean_diff + 1.96 * se
+
+# 결과 해석
+if result.pvalue < 0.05:
+    interpretation = f"두 그룹 간 평균 차이가 통계적으로 유의합니다 (p = {result.pvalue:.4f} < 0.05)"
+else:
+    interpretation = f"두 그룹 간 평균 차이가 통계적으로 유의하지 않습니다 (p = {result.pvalue:.4f} > 0.05)"
+
+# 효과크기 해석
+if abs(cohens_d) < 0.2:
+    effect_interpretation = "효과크기가 작습니다"
+elif abs(cohens_d) < 0.5:
+    effect_interpretation = "효과크기가 중간입니다"
+elif abs(cohens_d) < 0.8:
+    effect_interpretation = "효과크기가 큽니다"
+else:
+    effect_interpretation = "효과크기가 매우 큽니다"
+
+interpretation += f". {effect_interpretation} (d = {abs(cohens_d):.2f})."
+
+output = {
+    "method": test_name,
+    "statistic": float(result.statistic),
+    "pValue": float(result.pvalue),
+    "effectSize": float(cohens_d),
+    "confidence": {
+        "lower": float(ci_lower),
+        "upper": float(ci_upper)
+    },
+    "interpretation": interpretation
+}
+
+json.dumps(output)
+`
+
+    const resultJson = await pyodide.runPythonAsync(pythonCode)
+    return JSON.parse(resultJson)
+  }
+
+  /**
+   * 상관분석 수행
+   */
+  async performCorrelation(
+    x: number[],
+    y: number[]
+  ): Promise<AnalysisResult> {
+    await this.initialize()
+    const pyodide = getPyodideInstance() as any
+
+    const pythonCode = `
+import numpy as np
+from scipy import stats
+import json
+
+x = np.array(${JSON.stringify(x)})
+y = np.array(${JSON.stringify(y)})
+
+# Pearson 상관계수
+r, p_value = stats.pearsonr(x, y)
+
+# R-squared
+r_squared = r ** 2
+
+# 95% 신뢰구간 (Fisher z-transformation)
+z = np.arctanh(r)
+se = 1 / np.sqrt(len(x) - 3)
+z_lower = z - 1.96 * se
+z_upper = z + 1.96 * se
+ci_lower = np.tanh(z_lower)
+ci_upper = np.tanh(z_upper)
+
+# 상관관계 강도 해석
+if abs(r) < 0.3:
+    strength = "약한"
+elif abs(r) < 0.7:
+    strength = "중간"
+else:
+    strength = "강한"
+
+direction = "양의" if r > 0 else "음의"
+
+# 결과 해석
+if p_value < 0.05:
+    interpretation = f"{strength} {direction} 상관관계가 있습니다 (r = {r:.3f}, p = {p_value:.4f})"
+else:
+    interpretation = f"통계적으로 유의한 상관관계가 없습니다 (r = {r:.3f}, p = {p_value:.4f})"
+
+interpretation += f". 결정계수는 {r_squared:.3f}로, 변수 x가 y 변동의 {r_squared*100:.1f}%를 설명합니다."
+
+output = {
+    "method": "Pearson 상관분석",
+    "statistic": float(r),
+    "pValue": float(p_value),
+    "effectSize": float(r_squared),
+    "confidence": {
+        "lower": float(ci_lower),
+        "upper": float(ci_upper)
+    },
+    "interpretation": interpretation
+}
+
+json.dumps(output)
+`
+
+    const resultJson = await pyodide.runPythonAsync(pythonCode)
+    return JSON.parse(resultJson)
+  }
+
+  /**
+   * 회귀분석 수행
+   */
+  async performRegression(
+    x: number[],
+    y: number[]
+  ): Promise<AnalysisResult> {
+    await this.initialize()
+    const pyodide = getPyodideInstance() as any
+
+    const pythonCode = `
+import numpy as np
+from scipy import stats
+import json
+
+x = np.array(${JSON.stringify(x)})
+y = np.array(${JSON.stringify(y)})
+
+# 선형회귀
+slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+# R-squared
+r_squared = r_value ** 2
+
+# 예측값
+y_pred = slope * x + intercept
+
+# 잔차
+residuals = y - y_pred
+
+# MSE, RMSE
+mse = np.mean(residuals ** 2)
+rmse = np.sqrt(mse)
+
+# 회귀계수의 95% 신뢰구간
+t_critical = stats.t.ppf(0.975, len(x) - 2)
+slope_ci_lower = slope - t_critical * std_err
+slope_ci_upper = slope + t_critical * std_err
+
+# 결과 해석
+if p_value < 0.05:
+    interpretation = f"회귀모델이 통계적으로 유의합니다 (p = {p_value:.4f}). "
+    interpretation += f"X가 1 증가할 때 Y는 {slope:.3f} 변화합니다. "
+else:
+    interpretation = f"회귀모델이 통계적으로 유의하지 않습니다 (p = {p_value:.4f}). "
+
+interpretation += f"모델은 전체 변동의 {r_squared*100:.1f}%를 설명합니다 (R² = {r_squared:.3f})."
+
+output = {
+    "method": "단순선형회귀분석",
+    "statistic": float(slope),
+    "pValue": float(p_value),
+    "effectSize": float(r_squared),
+    "confidence": {
+        "lower": float(slope_ci_lower),
+        "upper": float(slope_ci_upper)
+    },
+    "interpretation": interpretation,
+    "additional": {
+        "intercept": float(intercept),
+        "rmse": float(rmse)
+    }
+}
+
+json.dumps(output)
+`
+
+    const resultJson = await pyodide.runPythonAsync(pythonCode)
+    return JSON.parse(resultJson)
+  }
+
+  /**
+   * ANOVA 분석
+   */
+  async performANOVA(groups: number[][]): Promise<AnalysisResult> {
+    await this.initialize()
+    const pyodide = getPyodideInstance() as any
+
+    const pythonCode = `
+import numpy as np
+from scipy import stats
+import json
+
+groups = ${JSON.stringify(groups)}
+groups = [np.array(g) for g in groups]
+
+# One-way ANOVA
+f_statistic, p_value = stats.f_oneway(*groups)
+
+# 효과크기 (eta-squared) 계산
+all_data = np.concatenate(groups)
+grand_mean = np.mean(all_data)
+
+# SSB (between groups)
+ssb = sum(len(g) * (np.mean(g) - grand_mean) ** 2 for g in groups)
+
+# SST (total)
+sst = np.sum((all_data - grand_mean) ** 2)
+
+# eta-squared
+eta_squared = ssb / sst
+
+# 결과 해석
+if p_value < 0.05:
+    interpretation = f"그룹 간 평균 차이가 통계적으로 유의합니다 (F = {f_statistic:.3f}, p = {p_value:.4f}). "
+    interpretation += "사후검정을 통해 어느 그룹 간 차이가 있는지 확인이 필요합니다."
+else:
+    interpretation = f"그룹 간 평균 차이가 통계적으로 유의하지 않습니다 (F = {f_statistic:.3f}, p = {p_value:.4f})."
+
+# 효과크기 해석
+if eta_squared < 0.01:
+    effect_interpretation = "효과크기가 작습니다"
+elif eta_squared < 0.06:
+    effect_interpretation = "효과크기가 중간입니다"
+else:
+    effect_interpretation = "효과크기가 큽니다"
+
+interpretation += f" {effect_interpretation} (η² = {eta_squared:.3f})."
+
+output = {
+    "method": "일원분산분석 (One-way ANOVA)",
+    "statistic": float(f_statistic),
+    "pValue": float(p_value),
+    "effectSize": float(eta_squared),
+    "interpretation": interpretation
+}
+
+json.dumps(output)
+`
+
+    const resultJson = await pyodide.runPythonAsync(pythonCode)
+    return JSON.parse(resultJson)
+  }
+
+  /**
+   * 데이터 타입에 따른 자동 분석 추천
+   */
+  recommendAnalysis(data: any[]): StatisticalMethod[] {
+    if (!data || data.length === 0) return []
+
+    const columns = Object.keys(data[0])
+    const columnTypes = this.detectColumnTypes(data)
+    
+    const recommendations: StatisticalMethod[] = []
+
+    // 숫자형 변수가 2개 이상인 경우
+    const numericColumns = columns.filter(col => columnTypes[col] === 'numeric')
+    
+    if (numericColumns.length >= 2) {
+      recommendations.push({
+        id: 'correlation',
+        name: '상관분석',
+        description: '두 변수 간의 관계를 분석합니다',
+        category: 'regression'
+      })
+      
+      recommendations.push({
+        id: 'regression',
+        name: '회귀분석',
+        description: '한 변수가 다른 변수에 미치는 영향을 분석합니다',
+        category: 'regression'
+      })
+    }
+
+    // 그룹 변수가 있는 경우
+    const categoricalColumns = columns.filter(col => columnTypes[col] === 'categorical')
+    
+    if (categoricalColumns.length > 0 && numericColumns.length > 0) {
+      const uniqueValues = new Set(data.map(row => row[categoricalColumns[0]]))
+      
+      if (uniqueValues.size === 2) {
+        recommendations.push({
+          id: 'independent-t-test',
+          name: '독립표본 t-검정',
+          description: '두 그룹 간 평균 차이를 검정합니다',
+          category: 't-test'
+        })
+      } else if (uniqueValues.size > 2) {
+        recommendations.push({
+          id: 'anova',
+          name: '일원분산분석 (ANOVA)',
+          description: '세 개 이상 그룹 간 평균 차이를 검정합니다',
+          category: 'anova'
+        })
+      }
+    }
+
+    return recommendations
+  }
+
+  /**
+   * 컬럼 타입 감지
+   */
+  private detectColumnTypes(data: any[]): Record<string, 'numeric' | 'categorical'> {
+    const columns = Object.keys(data[0])
+    const types: Record<string, 'numeric' | 'categorical'> = {}
+
+    columns.forEach(col => {
+      const values = data.map(row => row[col])
+      const numericValues = values.filter(v => !isNaN(Number(v)))
+      
+      if (numericValues.length / values.length > 0.8) {
+        types[col] = 'numeric'
+      } else {
+        types[col] = 'categorical'
+      }
+    })
+
+    return types
+  }
+}
+
+export const statisticalAnalysisService = StatisticalAnalysisService.getInstance()

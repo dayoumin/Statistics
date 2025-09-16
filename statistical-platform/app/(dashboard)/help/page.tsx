@@ -29,11 +29,11 @@ export default function HelpPage() {
   // 샘플 t-검정 결과
   const sampleTTestResult = {
     testName: "독립표본 t-검정",
-    testStatistic: 2.45,
+    statistic: 2.45,
     pValue: 0.016,
     degreesOfFreedom: 38,
     effectSize: 0.68,
-    confidenceInterval: [0.25, 2.15],
+    confidenceInterval: [0.25, 2.15] as [number, number],
     interpretation: "두 그룹 간에 통계적으로 유의한 차이가 있습니다",
     isSignificant: true,
     assumptions: [
@@ -54,9 +54,12 @@ export default function HelpPage() {
 
   // 샘플 상관분석 결과
   const sampleCorrelationResult = {
+    testName: "Pearson 상관분석",
+    statistic: 0.72,
     correlation: 0.72,
+    rSquared: 0.52,
     pValue: 0.001,
-    confidenceInterval: [0.45, 0.87],
+    confidenceInterval: [0.45, 0.87] as [number, number],
     interpretation: "강한 정적 상관관계",
     sampleSize: 50,
     isSignificant: true,
@@ -407,7 +410,7 @@ export default function HelpPage() {
                       <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-muted p-4 rounded-lg">
                           <div>
-                            <span className="font-medium">t-통계량:</span> {sampleTTestResult.testStatistic}
+                            <span className="font-medium">t-통계량:</span> {sampleTTestResult.statistic}
                           </div>
                           <div>
                             <span className="font-medium">p-value:</span> {sampleTTestResult.pValue}

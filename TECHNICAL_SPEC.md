@@ -38,66 +38,202 @@
 
 ## 2. 핵심 컴포넌트 명세
 
-### 2.1 Pyodide Manager (싱글톤 패턴)
+### 2.1 Pyodide 통계 엔진 통합
 ```typescript
-// lib/pyodide/manager.ts
-export class PyodideManager {
-  private static instance: PyodideManager | null = null
-  private pyodide: any = null
-  private isLoading = false
-  private loadPromise: Promise<void> | null = null
-
-  static getInstance(): PyodideManager {
-    if (!PyodideManager.instance) {
-      PyodideManager.instance = new PyodideManager()
-    }
-    return PyodideManager.instance
+// lib/pyodide-runtime-loader.ts
+export async function loadPyodideRuntime(): Promise<void> {
+  if (typeof window === 'undefined') {
+    console.warn('Pyodide는 브라우저에서만 실행됩니다.')
+    return
   }
 
-  async initialize(): Promise<void> {
-    if (this.pyodide) return
-    if (this.isLoading && this.loadPromise) {
-      return this.loadPromise
-    }
-
-    this.isLoading = true
-    this.loadPromise = this.loadPyodide()
-    
-    try {
-      await this.loadPromise
-    } finally {
-      this.isLoading = false
-    }
+  if (pyodideState.status === 'ready' || pyodideState.status === 'loading') {
+    return
   }
 
-  private async loadPyodide(): Promise<void> {
-    const pyodide = await (window as any).loadPyodide({
-      indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
-    })
+  try {
+    pyodideState = { ...pyodideState, status: 'loading', progress: '🐍 Python WebAssembly 로딩 시작...' }
     
-    await pyodide.loadPackage(['numpy', 'scipy', 'pandas'])
-    
-    // 통계 함수 초기화
-    await pyodide.runPythonAsync(`
-      import numpy as np
-      import scipy.stats as stats
-      import pandas as pd
-      import json
+    // CDN에서 Pyodide 스크립트 직접 로드
+    if (!(window as any).loadPyodide) {
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js'
+      document.head.appendChild(script)
       
-      def run_statistical_test(test_type, data, options=None):
-          """통합 통계 테스트 실행기"""
-          # 구현 코드...
-    `)
+      await new Promise((resolve, reject) => {
+        script.onload = resolve
+        script.onerror = reject
+      })
+    }
+
+    // Pyodide 인스턴스 생성
+    const pyodide = await (window as any).loadPyodide({
+      indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.2/full/'
+    })
+
+    // 필수 패키지 설치
+    await pyodide.loadPackage(['numpy', 'scipy', 'pandas', 'statsmodels'])
+
+    // 통계 분석 함수 초기화
+    await pyodide.runPythonAsync(`
+import scipy.stats as stats
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from statsmodels.formula.api import ols
+from statsmodels.stats.anova import anova_lm
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+import json
+
+# 기술통계 계산
+def calculate_descriptive_stats(data):
+    data = np.array(data)
+    return {
+        'count': len(data),
+        'mean': np.mean(data),
+        'median': np.median(data),
+        'std': np.std(data, ddof=1),
+        'var': np.var(data, ddof=1),
+        'min': np.min(data),
+        'max': np.max(data),
+        'q1': np.percentile(data, 25),
+        'q3': np.percentile(data, 75),
+        'iqr': stats.iqr(data),
+        'skewness': stats.skew(data),
+        'kurtosis': stats.kurtosis(data)
+    }
+
+# t-검정 함수들
+def one_sample_ttest(data, population_mean=0, alpha=0.05):
+    statistic, pvalue = stats.ttest_1samp(data, population_mean)
+    n = len(data)
+    df = n - 1
+    sample_mean = np.mean(data)
+    sample_std = np.std(data, ddof=1)
+    cohens_d = (sample_mean - population_mean) / sample_std
     
-    this.pyodide = pyodide
+    return {
+        'test_name': 'One-Sample t-test',
+        'statistic': float(statistic),
+        'p_value': float(pvalue),
+        'degrees_of_freedom': df,
+        'effect_size_cohens_d': float(cohens_d),
+        'is_significant': pvalue < alpha
+    }
+
+def independent_ttest(group1, group2, equal_var=True, alpha=0.05):
+    if equal_var:
+        statistic, pvalue = stats.ttest_ind(group1, group2)
+    else:
+        statistic, pvalue = stats.ttest_ind(group1, group2, equal_var=False)
+    
+    n1, n2 = len(group1), len(group2)
+    pooled_std = np.sqrt(((n1-1)*np.var(group1, ddof=1) + (n2-1)*np.var(group2, ddof=1)) / (n1+n2-2))
+    cohens_d = (np.mean(group1) - np.mean(group2)) / pooled_std
+    
+    return {
+        'test_name': 'Independent t-test',
+        'statistic': float(statistic),
+        'p_value': float(pvalue),
+        'degrees_of_freedom': n1 + n2 - 2,
+        'effect_size_cohens_d': float(cohens_d),
+        'is_significant': pvalue < alpha
+    }
+
+# ANOVA 함수
+def one_way_anova(*groups, alpha=0.05):
+    f_statistic, p_value = stats.f_oneway(*groups)
+    
+    # 효과크기 계산
+    grand_mean = np.mean(np.concatenate(groups))
+    ss_between = sum(len(group) * (np.mean(group) - grand_mean)**2 for group in groups)
+    ss_total = sum(np.sum((np.concatenate(groups) - grand_mean)**2))
+    eta_squared = ss_between / ss_total
+    
+    return {
+        'test_name': 'One-Way ANOVA',
+        'f_statistic': float(f_statistic),
+        'p_value': float(p_value),
+        'eta_squared': float(eta_squared),
+        'is_significant': p_value < alpha
+    }
+
+# 상관분석 함수
+def pearson_correlation(x, y, alpha=0.05):
+    correlation, p_value = stats.pearsonr(x, y)
+    return {
+        'correlation_type': 'Pearson',
+        'correlation': float(correlation),
+        'p_value': float(p_value),
+        'sample_size': len(x),
+        'is_significant': p_value < alpha
+    }
+
+# 정규성 검정
+def normality_test(data, alpha=0.05):
+    if len(data) <= 5000:
+        statistic, p_value = stats.shapiro(data)
+        test_name = 'Shapiro-Wilk'
+    else:
+        statistic, p_value = stats.kstest(data, 'norm')
+        test_name = 'Kolmogorov-Smirnov'
+    
+    return {
+        'test_name': test_name,
+        'statistic': float(statistic),
+        'p_value': float(p_value),
+        'is_normal': p_value > alpha
+    }
+
+print("✅ SciPy 통계 분석 엔진 초기화 완료")
+    `)
+
+    pyodideState = { 
+      instance: pyodide, 
+      status: 'ready', 
+      progress: '✅ 통계 분석 엔진 준비 완료!',
+      error: null 
+    }
+
+  } catch (error) {
+    pyodideState = { 
+      ...pyodideState, 
+      status: 'error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+// 통계 분석 실행
+export async function runStatisticalAnalysis(testType: string, data: any): Promise<any> {
+  const pyodide = pyodideState.instance
+  if (!pyodide) {
+    throw new Error('Pyodide가 초기화되지 않았습니다')
   }
 
-  async runPython(code: string): Promise<any> {
-    if (!this.pyodide) {
-      await this.initialize()
-    }
-    return this.pyodide.runPythonAsync(code)
-  }
+  const analysisCode = `
+import json
+result = None
+
+if test_type == '기술통계량':
+    result = calculate_descriptive_stats(data)
+elif test_type == '일표본 t-검정':
+    result = one_sample_ttest(data['values'], data.get('population_mean', 0))
+elif test_type == '독립표본 t-검정':
+    result = independent_ttest(data['group1'], data['group2'])
+elif test_type == '일원분산분석':
+    result = one_way_anova(*data['groups'])
+elif test_type == '상관분석':
+    result = pearson_correlation(data['x'], data['y'])
+
+json.dumps(result)
+  `
+
+  pyodide.globals.set('test_type', testType)
+  pyodide.globals.set('data', data)
+  
+  const result = await pyodide.runPython(analysisCode)
+  return JSON.parse(result)
 }
 ```
 

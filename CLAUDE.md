@@ -7,18 +7,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **전문가급 통계 분석 플랫폼** (PC웹 + 데스크탑 앱)
 - **목표**: SPSS/R Studio 급 고급 통계 소프트웨어
 - **대상**: 수산과학 연구자, 통계 전문가, 데이터 분석가
-- **기술**: Next.js 14 + TypeScript + shadcn/ui + Pyodide + Tauri
+- **기술**: Next.js 15 + TypeScript + shadcn/ui + Pyodide + Tauri
 
 **핵심 기능**:
 - **기본 통계**: t-test, ANOVA, 회귀분석, 상관분석
 - **사후분석**: Tukey HSD, Games-Howell, Dunn's test
-- **수산 특화**: CPUE 분석, von Bertalanffy 성장모델, 자원평가
 - **고급 분석**: 검정력 분석, 효과크기, 다중비교 보정
 
 ## 🏗️ 프로젝트 구조 (Next.js 14)
 
-### ⚠️ 중요: 새로운 개발 방식
-> **"Next.js 14 App Router + TypeScript + shadcn/ui"**
+### 🎯 핵심 개발 방향
+> **"단일 페이지 통합 분석 인터페이스" - 한 화면에서 모든 분석 완성**
 
 ```
 D:\Projects\Statics\
@@ -41,6 +40,16 @@ D:\Projects\Statics\
 ├── lib/                          # 유틸리티 라이브러리
 │   ├── utils.ts                  # 공통 유틸
 │   ├── store.ts                  # 상태 관리 (Zustand)
+│   ├── statistics/               # 통계 분석 모듈 (리팩토링됨)
+│   │   ├── index.ts              # 통합 export
+│   │   ├── types.ts              # 타입 정의
+│   │   ├── utils.ts              # 공통 유틸리티
+│   │   ├── descriptive.ts        # 기술통계 (3개 함수)
+│   │   ├── t-tests.ts            # t-검정 (4개 함수)
+│   │   ├── anova.ts              # 분산분석 & 사후검정 (5개 함수)
+│   │   ├── regression.ts         # 회귀분석 (4개 함수)
+│   │   ├── nonparametric.ts      # 비모수검정 (5개 함수)
+│   │   └── advanced.ts           # 고급분석 (6개 함수)
 │   └── pyodide/                  # Pyodide 통합
 ├── public/                       # 정적 파일
 ├── test-data/                    # 테스트용 CSV 파일들
@@ -48,22 +57,58 @@ D:\Projects\Statics\
 ```
 
 ### 🔴 현재 개발 상태
-**Phase 1 Week 1 완료** (2025-09-11)
-- ✅ 5개 계획 문서 작성 완료 (A급 품질)
-- ✅ 기술 스택 확정: Next.js 15 + shadcn/ui + Pyodide + Tauri
-- ✅ 13주 개발 로드맵 완성
-- ✅ **Next.js 15.5.2 프로젝트 생성 완료!** (`statistical-platform`)
-- ✅ **모든 기본 페이지 구현 완료** (9개 페이지)
-- ✅ **통계 분석 엔진 구현** (Pyodide + SciPy)
-- ✅ **코드 품질 A급 달성** (컴포넌트 모듈화, Error Boundary, 상수 시스템)
-- ✅ **메인 페이지 캐러셀 UI 구현**
+**Phase 1 Week 2 진행 중** (2025-09-12)
+
+#### ✅ Week 1 완료 (2025-09-11)
+- 5개 계획 문서 작성 완료 (A급 품질)
+- 기술 스택 확정: Next.js 15 + shadcn/ui + Pyodide + Tauri
+- 13주 개발 로드맵 완성
+- **Next.js 15.5.2 프로젝트 생성 완료!** (`statistical-platform`)
+- **모든 기본 페이지 구현 완료** (9개 페이지)
+- **통계 분석 엔진 구현** (Pyodide + SciPy)
+- **코드 품질 A급 달성** (컴포넌트 모듈화, Error Boundary, 상수 시스템)
+
+#### 🔄 Week 2 진행 사항 (2025-09-12)
+- ✅ **29개 통계 함수 모듈화 완료** (6개 카테고리로 체계적 정리)
+- ✅ **프로페셔널 랜딩 페이지 구현** ("스마트한 모두의 통계처리")
+- ✅ **통계 시나리오 엔진 구현** (데이터 특성 기반 자동 추천)
+- ✅ **스마트 분석 플로우 완성** (파일 업로드 → 검증 → 분석 목적 → 방법 추천)
+- ✅ **Perplexity 스타일 디자인 시스템 적용**
+- ✅ **단일 페이지 분석 플로우 설계 완료** (SINGLE_PAGE_ANALYSIS_FLOW.md)
+
+#### 📋 Week 3 계획 (2025-09-15 ~ 19) - 통합 분석 인터페이스
+**핵심 목표: 한 화면에서 모든 분석이 완성되는 가이드형 인터페이스 구현**
+
+**Day 1-2: 기본 구조 구축**
+- [ ] `/smart-flow` 페이지 생성
+- [ ] ProgressStepper 컴포넌트 (5단계 진행 표시)
+- [ ] 상태 관리 시스템 (Zustand store)
+- [ ] 기본 레이아웃 및 네비게이션
+
+**Day 3-4: 단계별 컴포넌트**
+- [ ] Step 1: DataUploadStep (드래그 앤 드롭)
+- [ ] Step 2: DataValidationStep (자동 검증)
+- [ ] Step 3: PurposeInputStep (AI 추천)
+- [ ] Step 4: AnalysisExecutionStep (실시간 진행)
+
+**Day 5-6: 결과 및 액션**
+- [ ] Step 5: ResultsActionStep (결과 표시)
+- [ ] 다음 액션 추천 시스템
+- [ ] 추가 분석 가이드
+- [ ] PDF 보고서 생성
+
+**Day 7: 통합 테스트**
+- [ ] 전체 플로우 테스트
+- [ ] 애니메이션 적용
+- [ ] 반응형 디자인
+- [ ] 성능 최적화
 
 ## 📋 개발 가이드라인
 
 ### 🛠️ 기술 스택
 ```
 Frontend:
-├── Next.js 14 (App Router)
+├── Next.js 15 (App Router)
 ├── TypeScript (완전한 타입 안전성)  
 ├── shadcn/ui (전문가급 UI)
 └── Tailwind CSS (스타일링)
@@ -82,52 +127,7 @@ Frontend:
 └── Tauri (Rust + Web)
 ```
 
-### 📅 개발 단계 (13주 계획)
 
-**Phase 1: 기반 구축 (Week 1-3)**
-- Week 1: Next.js 14 셋업, shadcn/ui, 기본 레이아웃
-- Week 2: 디자인 시스템, UI 컴포넌트 라이브러리
-- Week 3: 데이터 처리, 상태 관리, 파일 업로드
-
-**Phase 2: 통계 엔진 (Week 4-7)**
-- Week 4-5: Pyodide 통합, Python 통계 엔진
-- Week 6-7: 가정 검정, t-검정 구현
-
-**Phase 3: 고급 분석 (Week 8-11)**
-- Week 8-9: ANOVA, 사후분석
-- Week 10-11: 회귀분석, 상관분석
-
-**Phase 4: 완성 (Week 12-13)**
-- Week 12: Tauri 데스크탑 앱
-- Week 13: 테스트, 최적화, 배포
-
-### 🎯 현재 진행 상황
-
-**✅ 완료된 작업 (2025-09-11)**
-- 프로젝트 마스터 플랜 작성
-- 기술 아키텍처 설계  
-- UI/UX 디자인 가이드라인
-- 통계 분석 기능 명세
-- 개발 단계별 체크리스트
-- 문서 품질 검증 완료
-- **Next.js 15.5.2 프로젝트 생성 완료** ✨
-- **shadcn/ui 설치 및 설정 완료**
-- **기본 레이아웃 구현 완료**
-- **다크/라이트 테마 시스템 구현**
-- **9개 주요 페이지 구현** (Dashboard, Data, Analysis, Smart Analysis, Settings, Help, Results)
-- **Pyodide 런타임 로더 구현** (SSR 충돌 해결)
-- **통계 분석 엔진 통합** (SciPy/NumPy/Pandas)
-- **데이터 처리 및 검증 시스템**
-- **차트 컴포넌트** (Recharts 기반)
-- **캐러셀 네비게이션 UI**
-- **코드 품질 A급 달성**
-
-**🎯 다음 작업 (Phase 1 Week 2)**
-- 고급 통계 분석 기능 확장
-- 실시간 데이터 시각화 강화
-- 배치 분석 처리 시스템
-- 결과 보고서 생성 기능
-- 성능 최적화 및 캐싱
 
 ## ⚠️ 극히 중요: 통계 분석 구현 원칙
 
@@ -272,11 +272,13 @@ npx shadcn-ui@latest add button input card table dialog
 - `STATISTICAL_ANALYSIS_SPECIFICATIONS.md` - 통계 기능 명세
 - `DEVELOPMENT_PHASE_CHECKLIST.md` - 개발 체크리스트
 
-### 진행 상황
-- `START_TOMORROW.md` - 내일 시작 계획 (2025-09-11)
+### 현재 진행 문서
+- `SINGLE_PAGE_ANALYSIS_FLOW.md` - 단일 페이지 분석 플로우 설계
+- `NEXT_WEEK_TASKS.md` - Week 3 상세 계획
+- `PROJECT_STATUS.md` - 프로젝트 현황 보고서
 
 ### 기술 문서
-- Next.js 14: https://nextjs.org/docs
+- Next.js 15: https://nextjs.org/docs
 - shadcn/ui: https://ui.shadcn.com
 - Tailwind CSS: https://tailwindcss.com
 - Pyodide: https://pyodide.org
@@ -301,31 +303,6 @@ npx shadcn-ui@latest add button input card table dialog
 3. **Bundle 분석**: 정기적으로 번들 크기 확인
 4. **Pyodide 캐싱**: 통계 연산 결과 캐싱
 
-## 🎯 현재 우선순위
-
-### ✅ Week 1 완료 (2025-09-11)
-- ✅ Next.js 15 프로젝트 생성
-- ✅ shadcn/ui 설치 및 기본 설정
-- ✅ 프로젝트 구조 생성
-- ✅ 기본 레이아웃 컴포넌트 구현
-- ✅ 개발 환경 완전 구축
-- ✅ 기본 UI 시스템 완성
-- ✅ 테마 시스템 구현
-- ✅ 라우팅 구조 완성
-- ✅ Pyodide 통계 엔진 통합
-
-### 📈 Week 2 목표
-- 고급 통계 기능 구현 (ANOVA, 회귀분석)
-- 데이터 전처리 고도화
-- 배치 처리 시스템
-- 보고서 생성 기능
-- 성능 최적화
-
-### 🏆 최종 목표 (13주 후)
-- **웹 애플리케이션**: 완전한 통계 분석 플랫폼
-- **데스크탑 앱**: Tauri 기반 네이티브 앱  
-- **전문가 수준**: SPSS/R 급 통계 기능
-- **현대적 UI**: shadcn/ui 기반 아름다운 인터페이스
 
 ## 🤖 향후 AI 모델 통합 계획
 
@@ -343,15 +320,7 @@ npx shadcn-ui@latest add button input card table dialog
 
 ---
 
-## 🚀 개발 시작 준비 완료!
-
-**문서 품질**: A급 (평균 88/100점)  
-**기술 준비도**: 98%  
-**계획 완성도**: 100%
-
-**Phase 1 Week 1 성공적으로 완료!** ✨
-
 ---
 
-*Last updated: 2025-09-11*  
-*Next milestone: Phase 1 Week 2 - 고급 통계 기능 구현*
+*Last updated: 2025-09-12*  
+*Next milestone: Week 3 - 단일 페이지 통합 분석 인터페이스 구현*

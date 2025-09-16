@@ -33,7 +33,9 @@ function notifyListeners() {
 
 export function subscribeToPyodide(listener: (state: PyodideState) => void) {
   listeners.add(listener)
-  return () => listeners.delete(listener)
+  return () => {
+    listeners.delete(listener)
+  }
 }
 
 export function getPyodideState(): PyodideState {
