@@ -208,19 +208,19 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
   return (
     <div className="space-y-6">
       {error && (
-        <Card className="p-4 border-red-200 bg-red-50 dark:bg-red-950/20">
+        <Card className="p-4 border-gray-400 bg-gray-100 dark:bg-gray-900">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            <AlertCircle className="w-5 h-5 text-gray-800 dark:text-gray-200" />
+            <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">{error}</p>
           </div>
         </Card>
       )}
       
       {pyodideLoading && (
-        <Card className="p-4 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+        <Card className="p-4 border-gray-300 bg-gray-50 dark:bg-gray-850">
           <div className="flex items-center gap-2">
-            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-            <p className="text-sm text-blue-700 dark:text-blue-300">
+            <Loader2 className="w-5 h-5 text-gray-700 dark:text-gray-300 animate-spin" />
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               Python 환경을 준비하고 있습니다...
             </p>
           </div>
@@ -250,7 +250,7 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
               return (
                 <div key={index} className="flex items-center space-x-3">
                   {isCompleted ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircle className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   ) : isCurrent ? (
                     <Loader2 className="w-5 h-5 text-primary animate-spin" />
                   ) : (
@@ -280,7 +280,7 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
       
       {/* 모든 가정 검정 결과 표시 */}
       {assumptionResults.normality && (
-        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
           <h4 className="font-medium mb-3">🔍 가정 검정 결과 (자동 수행)</h4>
           <div className="space-y-3 text-sm">
             
@@ -291,14 +291,14 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span>그룹 1 ({assumptionResults.normality.group1?.method}):</span>
-                    <span className={assumptionResults.normality.group1?.isNormal ? 'text-green-600' : 'text-orange-600'}>
+                    <span className={assumptionResults.normality.group1?.isNormal ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-500 dark:text-gray-500'}>
                       {assumptionResults.normality.group1?.isNormal ? '✓ 만족' : '⚠ 위반'} 
                       (p={assumptionResults.normality.group1?.pValue?.toFixed(4)})
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>그룹 2 ({assumptionResults.normality.group2?.method}):</span>
-                    <span className={assumptionResults.normality.group2?.isNormal ? 'text-green-600' : 'text-orange-600'}>
+                    <span className={assumptionResults.normality.group2?.isNormal ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-500 dark:text-gray-500'}>
                       {assumptionResults.normality.group2?.isNormal ? '✓ 만족' : '⚠ 위반'}
                       (p={assumptionResults.normality.group2?.pValue?.toFixed(4)})
                     </span>
@@ -320,7 +320,7 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span>Levene's test:</span>
-                    <span className={assumptionResults.homogeneity.isHomogeneous ? 'text-green-600' : 'text-orange-600'}>
+                    <span className={assumptionResults.homogeneity.isHomogeneous ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-500 dark:text-gray-500'}>
                       {assumptionResults.homogeneity.isHomogeneous ? '✓ 만족' : '⚠ 위반'}
                       (p={assumptionResults.homogeneity.levene?.pValue?.toFixed(4)})
                     </span>
@@ -341,13 +341,13 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span>그룹 1:</span>
-                    <span className={assumptionResults.outliers.group1?.hasOutliers ? 'text-orange-600' : 'text-green-600'}>
+                    <span className={assumptionResults.outliers.group1?.hasOutliers ? 'text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200 font-bold'}>
                       {assumptionResults.outliers.group1?.iqrMethod || 0}개 발견
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>그룹 2:</span>
-                    <span className={assumptionResults.outliers.group2?.hasOutliers ? 'text-orange-600' : 'text-green-600'}>
+                    <span className={assumptionResults.outliers.group2?.hasOutliers ? 'text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200 font-bold'}>
                       {assumptionResults.outliers.group2?.iqrMethod || 0}개 발견
                     </span>
                   </div>
@@ -362,7 +362,7 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span>표본 크기:</span>
-                    <span className={assumptionResults.sampleSize.isAdequate ? 'text-green-600' : 'text-orange-600'}>
+                    <span className={assumptionResults.sampleSize.isAdequate ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-500 dark:text-gray-500'}>
                       n1={assumptionResults.sampleSize.group1Size}, n2={assumptionResults.sampleSize.group2Size}
                     </span>
                   </div>
@@ -389,7 +389,7 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span>Durbin-Watson:</span>
-                    <span className={assumptionResults.independence.isIndependent ? 'text-green-600' : 'text-orange-600'}>
+                    <span className={assumptionResults.independence.isIndependent ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-500 dark:text-gray-500'}>
                       {assumptionResults.independence.durbinWatson?.toFixed(3)}
                       {assumptionResults.independence.isIndependent ? ' ✓' : ' ⚠'}
                     </span>
@@ -405,7 +405,7 @@ export function AnalysisExecutionStep({ method, onAnalysisComplete }: AnalysisEx
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span>선형 관계:</span>
-                    <span className={assumptionResults.linearity.isLinear ? 'text-green-600' : 'text-orange-600'}>
+                    <span className={assumptionResults.linearity.isLinear ? 'text-gray-800 dark:text-gray-200 font-bold' : 'text-gray-500 dark:text-gray-500'}>
                       {assumptionResults.linearity.isLinear ? '✓ 있음' : '⚠ 약함'}
                       (R²={assumptionResults.linearity.rSquared?.toFixed(3)})
                     </span>

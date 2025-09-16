@@ -153,7 +153,7 @@ export async function createInteractiveBoxplot(
         template='plotly_white',
         showlegend=True,
         height=500,
-        hovermode='x unified',
+        hovermode='closest',
         font=dict(size=12)
     )
     
@@ -311,6 +311,7 @@ export async function createInteractiveHeatmap(
         height=500,
         width=600,
         font=dict(size=12),
+        hovermode='closest',
         xaxis=dict(side='bottom'),
         yaxis=dict(autorange='reversed')
     )

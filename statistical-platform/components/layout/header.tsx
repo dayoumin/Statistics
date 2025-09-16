@@ -10,8 +10,8 @@ import { memo } from "react"
 
 // 네비게이션 아이템을 상수로 이동하여 리렌더링 시 재생성 방지
 const NAV_ITEMS = [
-  { href: "/", label: "스마트 분석" },
-  { href: "/analysis", label: "전통 분석" },
+  { href: "/", label: "홈" },
+  { href: "/analysis", label: "통계 분석" },
   { href: "/dashboard", label: "대시보드" },
   { href: "/about", label: "소개" },
   { href: "/help", label: "도움말" },

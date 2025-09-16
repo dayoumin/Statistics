@@ -18,6 +18,30 @@ export interface ValidationResults {
   warnings: string[]
 }
 
+export interface ExtendedValidationResults extends ValidationResults {
+  columnStats?: ColumnStatistics[]
+}
+
+export interface ColumnStatistics {
+  name: string
+  type: 'numeric' | 'categorical' | 'mixed'
+  numericCount: number
+  textCount: number
+  missingCount: number
+  uniqueValues: number
+  // 수치형 변수일 경우
+  mean?: number
+  median?: number
+  std?: number
+  min?: number
+  max?: number
+  q1?: number
+  q3?: number
+  outliers?: number[]
+  // 범주형 변수일 경우
+  topCategories?: { value: string; count: number }[]
+}
+
 export interface AnalysisConfig {
   purpose: string
   selectedMethod: StatisticalMethod | null

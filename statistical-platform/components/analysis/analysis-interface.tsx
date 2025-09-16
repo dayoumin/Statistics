@@ -151,28 +151,35 @@ export function AnalysisInterface() {
       {!searchQuery && (
         <Tabs defaultValue="all" onValueChange={setSelectedCategory}>
           <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="all">전체</TabsTrigger>
             {categories.map(cat => (
               <TabsTrigger key={cat.id} value={cat.id}>
                 {cat.name}
               </TabsTrigger>
             ))}
+            <TabsTrigger value="all">전체</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-6">
             {categories.map(category => {
               const Icon = category.icon
               return (
-                <Card key={category.id}>
+                <Card key={category.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg bg-${category.color}-50 dark:bg-${category.color}-950/30`}>
-                        <Icon className={`h-5 w-5 text-${category.color}-600 dark:text-${category.color}-400`} />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg bg-${category.color}-50 dark:bg-${category.color}-950/30`}>
+                          <Icon className={`h-5 w-5 text-${category.color}-600 dark:text-${category.color}-400`} />
+                        </div>
+                        <div>
+                          <CardTitle>{category.name}</CardTitle>
+                          <CardDescription>{category.tests.length}개 분석 도구</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle>{category.name}</CardTitle>
-                        <CardDescription>{category.tests.length}개 분석 도구</CardDescription>
-                      </div>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/analysis/${category.id}`}>
+                          카테고리 보기
+                        </Link>
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -184,7 +191,7 @@ export function AnalysisInterface() {
                           className="justify-start h-auto p-4"
                           asChild
                         >
-                          <Link href={`/analysis/run?method=${encodeURIComponent(test.name)}`}>
+                          <Link href={`/analysis/${category.id}/${encodeURIComponent(test.name)}`}>
                             <div className="text-left">
                               <div className="font-medium">{test.name}</div>
                               <div className="text-sm text-muted-foreground">{test.description}</div>
@@ -203,8 +210,17 @@ export function AnalysisInterface() {
             <TabsContent key={category.id} value={category.id}>
               <Card>
                 <CardHeader>
-                  <CardTitle>{category.name}</CardTitle>
-                  <CardDescription>{category.tests.length}개 분석 도구</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>{category.name}</CardTitle>
+                      <CardDescription>{category.tests.length}개 분석 도구</CardDescription>
+                    </div>
+                    <Button asChild>
+                      <Link href={`/analysis/${category.id}`}>
+                        전체 보기
+                      </Link>
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-3 md:grid-cols-2">
@@ -215,7 +231,7 @@ export function AnalysisInterface() {
                         className="justify-start h-auto p-4"
                         asChild
                       >
-                        <Link href={`/analysis/run?method=${encodeURIComponent(test.name)}`}>
+                        <Link href={`/analysis/${category.id}/${encodeURIComponent(test.name)}`}>
                           <div className="text-left">
                             <div className="font-medium">{test.name}</div>
                             <div className="text-sm text-muted-foreground">{test.description}</div>

@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Upload, CheckCircle, BarChart3, FileText, Sparkles, HelpCircle, X, Clock } from 'lucide-react'
 import { ProgressStepper } from '@/components/smart-flow/ProgressStepper'
-import { DataUploadStep } from '@/components/smart-flow/steps/DataUploadStep'
-import { DataValidationStep } from '@/components/smart-flow/steps/DataValidationStep'
+import { DataUploadStepImproved } from '@/components/smart-flow/steps/DataUploadStepImproved'
+import { DataValidationStepWithCharts } from '@/components/smart-flow/steps/DataValidationStepWithCharts'
 import { PurposeInputStep } from '@/components/smart-flow/steps/PurposeInputStep'
 import { AnalysisExecutionStep } from '@/components/smart-flow/steps/AnalysisExecutionStep'
 import { ResultsActionStep } from '@/components/smart-flow/steps/ResultsActionStep'
@@ -111,9 +111,9 @@ export default function SmartFlowPageRefactored() {
     goToNextStep()
   }, [setAnalysisResults, goToNextStep])
 
-  // 데이터 검증 수행
+  // 데이터 검증 수행 (상세 검증 포함)
   const performDataValidation = (data: DataRow[]): ValidationResults => {
-    return DataValidationService.performValidation(data)
+    return DataValidationService.performDetailedValidation(data)
   }
   
   // 데이터 정보 추출 (PurposeInputStep에 전달용)
@@ -155,7 +155,7 @@ export default function SmartFlowPageRefactored() {
         
         {/* 도움말 패널 */}
         {showHelp && (
-          <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+          <Card className="border-gray-300 bg-gray-50 dark:bg-gray-900/50">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg">💾 데이터 크기 가이드</CardTitle>
@@ -185,7 +185,7 @@ export default function SmartFlowPageRefactored() {
                     <li>• 8GB RAM: ~30,000행</li>
                     <li>• 16GB RAM: ~60,000행</li>
                     {systemMemory && (
-                      <li className="font-medium text-blue-600 dark:text-blue-400">
+                      <li className="font-medium text-gray-700 dark:text-gray-300">
                         → 감지된 메모리: {systemMemory}GB
                       </li>
                     )}
@@ -193,7 +193,7 @@ export default function SmartFlowPageRefactored() {
                 </div>
               </div>
               
-              <div className="bg-yellow-100 dark:bg-yellow-900/20 rounded-lg p-3">
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
                 <p className="text-sm">
                   <strong>💡 팁:</strong> 브라우저는 시스템 메모리의 25-50%만 사용 가능합니다.
                   대용량 데이터는 샘플링하거나 필요한 컬럼만 선택하세요.
@@ -204,7 +204,7 @@ export default function SmartFlowPageRefactored() {
                 <a 
                   href="/help#data-limits" 
                   target="_blank"
-                  className="text-blue-600 hover:underline"
+                  className="text-gray-700 dark:text-gray-300 hover:underline hover:text-gray-900 dark:hover:text-gray-100"
                 >
                   자세한 도움말 보기 →
                 </a>
@@ -244,10 +244,10 @@ export default function SmartFlowPageRefactored() {
 
         {/* 에러 메시지 표시 */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
             <div className="flex items-center space-x-2">
-              <span className="text-red-600 dark:text-red-400 font-medium">오류:</span>
-              <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+              <span className="text-gray-800 dark:text-gray-200 font-bold">오류:</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{error}</span>
             </div>
           </div>
         )}
@@ -279,13 +279,13 @@ export default function SmartFlowPageRefactored() {
             
             {currentStep === 1 && (
               <div className="animate-in fade-in duration-500">
-                <DataUploadStep onUploadComplete={handleUploadComplete} />
+                <DataUploadStepImproved onUploadComplete={handleUploadComplete} />
               </div>
             )}
 
             {currentStep === 2 && (
               <div className="animate-in fade-in duration-500">
-                <DataValidationStep
+                <DataValidationStepWithCharts
                   validationResults={validationResults}
                   data={uploadedData}
                 />
@@ -320,8 +320,8 @@ export default function SmartFlowPageRefactored() {
         {/* 네비게이션 버튼 */}
         <div className="flex justify-between">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={goToPreviousStep}
               disabled={currentStep === 1 || isLoading}
             >
@@ -345,7 +345,7 @@ export default function SmartFlowPageRefactored() {
             </Button>
           </div>
           
-          <Button 
+          <Button
             onClick={goToNextStep}
             disabled={currentStep === 5 || !canProceedToNext() || isLoading}
           >

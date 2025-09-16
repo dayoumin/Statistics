@@ -71,13 +71,14 @@ export class LargeFileProcessor {
     return new Promise((resolve, reject) => {
       const allData: DataRow[] = []
       let processedRows = 0
-      const totalRows = 0
+      let totalRows = 0  // const 제거하여 업데이트 가능하게 변경
       const startTime = Date.now()
       let chunkIndex = 0
       let shouldStop = false
 
       // 먼저 전체 행 수 추정 (파일 크기 기반)
       const estimatedRows = Math.ceil(file.size / 50) // 평균 50바이트/행 가정
+      totalRows = estimatedRows  // 초기값 설정
 
       Papa.parse(file, {
         header: true,

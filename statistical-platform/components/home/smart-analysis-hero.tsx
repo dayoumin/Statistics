@@ -19,26 +19,26 @@ const processSteps = [
   {
     title: "데이터 업로드",
     description: "CSV, Excel 파일 드래그 또는 선택",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30"
+    color: "text-gray-700 dark:text-gray-300",
+    bgColor: "bg-gray-50 dark:bg-gray-900"
   },
   {
     title: "자동 검증",
     description: "데이터 구조, 타입, 품질 분석",
-    color: "text-purple-600",
-    bgColor: "bg-purple-50 dark:bg-purple-950/30"
+    color: "text-gray-800 dark:text-gray-200",
+    bgColor: "bg-gray-100 dark:bg-gray-850"
   },
   {
     title: "AI 추천",
     description: "최적의 통계 분석 방법 제안",
-    color: "text-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950/30"
+    color: "text-gray-900 dark:text-gray-100",
+    bgColor: "bg-white dark:bg-gray-800"
   },
   {
     title: "결과 확인",
     description: "전문가 수준의 분석을 쉬운 언어로",
-    color: "text-orange-600",
-    bgColor: "bg-orange-50 dark:bg-orange-950/30"
+    color: "text-gray-600 dark:text-gray-400",
+    bgColor: "bg-gray-50 dark:bg-gray-850"
   }
 ]
 
@@ -92,7 +92,7 @@ export function SmartAnalysisHero() {
       <div className="flex flex-wrap gap-4 justify-center">
         {benefits.map((benefit, i) => (
           <div key={i} className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <CheckCircle2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             <span className="text-sm font-medium">{benefit}</span>
           </div>
         ))}

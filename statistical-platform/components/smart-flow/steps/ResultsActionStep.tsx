@@ -245,11 +245,11 @@ export function ResultsActionStep({ results }: ResultsActionStepProps) {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">통계량</p>
-              <p className="text-xl font-bold">{results.statistic.toFixed(3)}</p>
+              <p className="text-lg">{results.statistic.toFixed(3)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">p-value</p>
-              <p className={`text-xl font-bold ${
+              <p className={`text-lg ${
                 results.pValue < 0.05 ? 'text-green-600' : 'text-gray-600'
               }`}>
                 {results.pValue.toFixed(3)}
@@ -258,7 +258,7 @@ export function ResultsActionStep({ results }: ResultsActionStepProps) {
             {results.effectSize && (
               <div>
                 <p className="text-sm text-muted-foreground">효과크기</p>
-                <p className="text-xl font-bold">{results.effectSize.toFixed(2)}</p>
+                <p className="text-lg">{results.effectSize.toFixed(2)}</p>
               </div>
             )}
           </div>

@@ -44,68 +44,66 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  
-  /* Perplexity-inspired Statistical Platform Variables */
-  --primary: oklch(0.488 0.243 264.376);  /* Perplexity Purple */
-  --primary-foreground: oklch(1 0 0);
-  --accent: oklch(0.7 0.15 193);          /* Subtle Cyan accent */
-  --accent-foreground: oklch(0.1 0 0);
-  
-  /* Monochrome Success States (Perplexity style) */
-  --success: oklch(0.3 0 0);              /* Dark gray for success */
-  --success-foreground: oklch(0.98 0 0);
-  --warning: oklch(0.5 0 0);              /* Medium gray for warning */
-  --warning-foreground: oklch(0.98 0 0);
-  --info: oklch(0.4 0 0);                 /* Dark gray for info */
-  --info-foreground: oklch(0.98 0 0);
-  
-  /* Statistical Analysis Colors - Minimal */
-  --stat-significant: oklch(0.3 0 0);      /* Dark gray for significance */
-  --stat-non-significant: oklch(0.6 0 0);  /* Medium gray for non-sig */
-  --stat-highly-significant: oklch(0.1 0 0); /* Very dark gray */
-  
-  /* Minimal Category Colors */
-  --category-primary: oklch(0.488 0.243 264.376);
-  --category-muted: oklch(0.7 0 0);
-  --category-subtle: oklch(0.9 0 0);
-  
-  /* Data Status Colors */
-  --data-active: oklch(0.65 0.15 145);
-  --data-processed: oklch(0.65 0.15 220);
-  --data-error: oklch(0.6 0.22 15);
-  --data-pending: oklch(0.7 0.1 60);
+  --radius: 0.5rem;
+  --background: oklch(1 0 0);           /* Pure white */
+  --foreground: oklch(0.1 0 0);         /* Near black */
+  --card: oklch(1 0 0);                  /* White */
+  --card-foreground: oklch(0.1 0 0);     /* Near black */
+  --popover: oklch(1 0 0);               /* White */
+  --popover-foreground: oklch(0.1 0 0);  /* Near black */
+  --primary: oklch(0.1 0 0);             /* Near black */
+  --primary-foreground: oklch(1 0 0);    /* White */
+  --secondary: oklch(0.95 0 0);          /* Light gray */
+  --secondary-foreground: oklch(0.1 0 0); /* Near black */
+  --muted: oklch(0.95 0 0);              /* Light gray */
+  --muted-foreground: oklch(0.4 0 0);    /* Dark gray */
+  --accent: oklch(0.9 0 0);              /* Light gray */
+  --accent-foreground: oklch(0.1 0 0);   /* Near black */
+  --destructive: oklch(0.3 0 0);         /* Dark gray instead of red */
+  --border: oklch(0.9 0 0);              /* Light gray */
+  --input: oklch(0.9 0 0);               /* Light gray */
+  --ring: oklch(0.6 0 0);                /* Medium gray */
+  --chart-1: oklch(0.2 0 0);             /* Dark gray */
+  --chart-2: oklch(0.4 0 0);             /* Medium dark gray */
+  --chart-3: oklch(0.6 0 0);             /* Medium gray */
+  --chart-4: oklch(0.75 0 0);            /* Light gray */
+  --chart-5: oklch(0.85 0 0);            /* Very light gray */
+  --sidebar: oklch(0.98 0 0);            /* Off white */
+  --sidebar-foreground: oklch(0.1 0 0);  /* Near black */
+  --sidebar-primary: oklch(0.1 0 0);     /* Near black */
+  --sidebar-primary-foreground: oklch(1 0 0); /* White */
+  --sidebar-accent: oklch(0.95 0 0);     /* Light gray */
+  --sidebar-accent-foreground: oklch(0.1 0 0); /* Near black */
+  --sidebar-border: oklch(0.9 0 0);      /* Light gray */
+  --sidebar-ring: oklch(0.6 0 0);        /* Medium gray */
+
+  /* Monochrome Design System */
+  --hover-bg: oklch(0.95 0 0);           /* Light gray hover */
+  --hover-border: oklch(0.7 0 0);        /* Medium gray hover */
+  --active-bg: oklch(0.9 0 0);           /* Slightly darker when active */
+  --focus-ring: oklch(0.5 0 0);          /* Medium gray focus */
+
+  /* Monochrome Status States */
+  --success: oklch(0.2 0 0);             /* Dark gray for success */
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.4 0 0);             /* Medium gray for warning */
+  --warning-foreground: oklch(1 0 0);
+  --info: oklch(0.3 0 0);                /* Dark gray for info */
+  --info-foreground: oklch(1 0 0);
+  --error: oklch(0.25 0 0);              /* Dark gray for error */
+  --error-foreground: oklch(1 0 0);
+
+  /* Statistical Analysis - Monochrome */
+  --stat-significant: oklch(0.2 0 0);    /* Dark gray */
+  --stat-non-significant: oklch(0.6 0 0); /* Medium gray */
+  --stat-highly-significant: oklch(0.1 0 0); /* Near black */
+
+  /* Category Colors - Grayscale */
+  --category-1: oklch(0.1 0 0);          /* Near black */
+  --category-2: oklch(0.3 0 0);          /* Dark gray */
+  --category-3: oklch(0.5 0 0);          /* Medium gray */
+  --category-4: oklch(0.7 0 0);          /* Light gray */
+  --category-5: oklch(0.85 0 0);         /* Very light gray */
   
   /* Layout Spacing */
   --header-height: 4rem;
@@ -114,62 +112,65 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  
-  /* Dark Mode Statistical Platform Custom Variables */
-  --success: oklch(0.65 0.15 145);
-  --success-foreground: oklch(0.1 0 0);
-  --warning: oklch(0.8 0.12 85);
-  --warning-foreground: oklch(0.1 0 0);
-  --info: oklch(0.7 0.12 220);
-  --info-foreground: oklch(0.95 0 0);
-  
-  /* Dark Mode Statistical Analysis Colors */
-  --stat-significant: oklch(0.65 0.18 145);
-  --stat-non-significant: oklch(0.7 0.12 35);
-  --stat-highly-significant: oklch(0.6 0.2 145);
-  
-  /* Dark Mode Difficulty Level Colors */
-  --difficulty-beginner: oklch(0.65 0.12 120);
-  --difficulty-intermediate: oklch(0.7 0.15 80);
-  --difficulty-advanced: oklch(0.6 0.18 40);
-  --difficulty-expert: oklch(0.55 0.2 15);
-  
-  /* Dark Mode Data Status Colors */
-  --data-active: oklch(0.6 0.12 145);
-  --data-processed: oklch(0.6 0.12 220);
-  --data-error: oklch(0.65 0.18 15);
-  --data-pending: oklch(0.65 0.08 60);
+  --background: oklch(0.05 0 0);         /* Near black */
+  --foreground: oklch(0.95 0 0);         /* Near white */
+  --card: oklch(0.1 0 0);                /* Dark gray */
+  --card-foreground: oklch(0.95 0 0);    /* Near white */
+  --popover: oklch(0.1 0 0);             /* Dark gray */
+  --popover-foreground: oklch(0.95 0 0); /* Near white */
+  --primary: oklch(0.9 0 0);             /* Light gray */
+  --primary-foreground: oklch(0.05 0 0); /* Near black */
+  --secondary: oklch(0.15 0 0);          /* Dark gray */
+  --secondary-foreground: oklch(0.95 0 0); /* Near white */
+  --muted: oklch(0.15 0 0);              /* Dark gray */
+  --muted-foreground: oklch(0.6 0 0);    /* Medium gray */
+  --accent: oklch(0.2 0 0);              /* Dark gray */
+  --accent-foreground: oklch(0.95 0 0);  /* Near white */
+  --destructive: oklch(0.7 0 0);         /* Light gray instead of red */
+  --border: oklch(0.2 0 0);              /* Dark gray */
+  --input: oklch(0.2 0 0);               /* Dark gray */
+  --ring: oklch(0.5 0 0);                /* Medium gray */
+  --chart-1: oklch(0.8 0 0);             /* Light gray */
+  --chart-2: oklch(0.6 0 0);             /* Medium light gray */
+  --chart-3: oklch(0.4 0 0);             /* Medium gray */
+  --chart-4: oklch(0.25 0 0);            /* Dark gray */
+  --chart-5: oklch(0.15 0 0);            /* Very dark gray */
+  --sidebar: oklch(0.08 0 0);            /* Very dark gray */
+  --sidebar-foreground: oklch(0.95 0 0); /* Near white */
+  --sidebar-primary: oklch(0.9 0 0);     /* Light gray */
+  --sidebar-primary-foreground: oklch(0.05 0 0); /* Near black */
+  --sidebar-accent: oklch(0.15 0 0);     /* Dark gray */
+  --sidebar-accent-foreground: oklch(0.95 0 0); /* Near white */
+  --sidebar-border: oklch(0.2 0 0);      /* Dark gray */
+  --sidebar-ring: oklch(0.5 0 0);        /* Medium gray */
+
+  /* Dark Mode Monochrome Design System */
+  --hover-bg: oklch(0.15 0 0);           /* Dark gray hover */
+  --hover-border: oklch(0.3 0 0);        /* Medium gray hover */
+  --active-bg: oklch(0.2 0 0);           /* Slightly lighter when active */
+  --focus-ring: oklch(0.5 0 0);          /* Medium gray focus */
+
+  /* Dark Mode Status States - Monochrome */
+  --success: oklch(0.8 0 0);             /* Light gray for success */
+  --success-foreground: oklch(0.05 0 0);
+  --warning: oklch(0.6 0 0);             /* Medium gray for warning */
+  --warning-foreground: oklch(0.05 0 0);
+  --info: oklch(0.7 0 0);                /* Light gray for info */
+  --info-foreground: oklch(0.05 0 0);
+  --error: oklch(0.75 0 0);              /* Light gray for error */
+  --error-foreground: oklch(0.05 0 0);
+
+  /* Dark Mode Statistical Analysis - Monochrome */
+  --stat-significant: oklch(0.8 0 0);    /* Light gray */
+  --stat-non-significant: oklch(0.4 0 0); /* Medium gray */
+  --stat-highly-significant: oklch(0.9 0 0); /* Near white */
+
+  /* Dark Mode Category Colors - Grayscale */
+  --category-1: oklch(0.9 0 0);          /* Near white */
+  --category-2: oklch(0.7 0 0);          /* Light gray */
+  --category-3: oklch(0.5 0 0);          /* Medium gray */
+  --category-4: oklch(0.3 0 0);          /* Dark gray */
+  --category-5: oklch(0.15 0 0);         /* Very dark gray */
 }
 
 @layer base {
@@ -182,19 +183,78 @@
 }
 
 @layer utilities {
+  /* Hover Effects - Unified */
+  .hover-lift {
+    @apply transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  /* Plotly Chart Fixes */
+  .js-plotly-plot .plotly .hoverlayer {
+    z-index: 1000 !important;
+  }
+
+  .js-plotly-plot .plotly .hoverlayer .hovertext {
+    z-index: 1001 !important;
+  }
+
+  .js-plotly-plot .plotly .hoverlayer path {
+    z-index: 999 !important;
+  }
+
+  /* Ensure hover labels are always on top */
+  .hoverlabel {
+    z-index: 10000 !important;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-200 ease-in-out hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-white/5;
+  }
+
+  .hover-bg-subtle {
+    @apply transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-900;
+  }
+
+  .hover-border-dark {
+    @apply transition-colors duration-150 hover:border-gray-400 dark:hover:border-gray-600;
+  }
+
+  /* Button Hover States - Monochrome */
+  .btn-hover {
+    @apply transition-all duration-150 hover:bg-gray-100 dark:hover:bg-gray-800 hover:scale-[1.02] active:scale-[0.98];
+  }
+
+  .btn-primary-hover {
+    @apply transition-all duration-150 hover:bg-gray-800 dark:hover:bg-gray-200 hover:shadow-md active:scale-[0.98];
+  }
+
+  /* Link Hover Effects */
+  .link-hover {
+    @apply transition-all duration-150 hover:text-gray-600 dark:hover:text-gray-400 hover:underline-offset-4;
+  }
+
+  /* Card Hover Effects */
+  .card-hover {
+    @apply transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700;
+  }
+
+  /* Input Focus Effects */
+  .input-focus {
+    @apply transition-all duration-150 focus:border-gray-400 dark:focus:border-gray-600 focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-800;
+  }
+
   /* Statistical Significance Utilities */
   .stat-significant {
     color: var(--stat-significant);
   }
-  
+
   .stat-non-significant {
     color: var(--stat-non-significant);
   }
-  
+
   .stat-highly-significant {
     color: var(--stat-highly-significant);
   }
-  
+
   /* Difficulty Level Utilities */
   .difficulty-beginner {
     color: var(--difficulty-beginner);
