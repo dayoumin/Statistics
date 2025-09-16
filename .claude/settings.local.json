@@ -18,7 +18,9 @@
       "Bash(curl:*)",
       "Bash(git add:*)",
       "Bash(dir:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(git push:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
