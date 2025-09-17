@@ -1,13 +1,13 @@
 {
   "mcpServers": {
     "playwright": {
-      "command": "uvx",
-      "args": ["@microsoft/mcp-server-playwright"]
+      "command": "npx",
+      "args": ["@playwright/mcp"]
     },
     "sqlite": {
       "command": "npx",
       "args": [
-        "@modelcontextprotocol/server-sqlite",
+        "mcp-sqlite",
         "--db-path",
         "./statistical-platform/data/statistics.db"
       ]

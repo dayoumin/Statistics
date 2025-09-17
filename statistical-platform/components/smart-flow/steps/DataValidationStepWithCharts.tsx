@@ -677,69 +677,70 @@ export const DataValidationStepWithCharts = memo(function DataValidationStepWith
           {selectedColumn && (
             <div className="space-y-4">
               {selectedColumn.type === 'numeric' ? (
-                <Tabs defaultValue="histogram" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="histogram">히스토그램</TabsTrigger>
-                    <TabsTrigger value="boxplot">박스플롯</TabsTrigger>
-                  </TabsList>
+                <>
+                  <Tabs defaultValue="histogram" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="histogram">히스토그램</TabsTrigger>
+                      <TabsTrigger value="boxplot">박스플롯</TabsTrigger>
+                    </TabsList>
 
-                  <TabsContent value="histogram" className="mt-4">
-                    <div className="h-[400px] w-full">
-                      <PlotlyChartImproved
-                        data={[{
-                          x: getNumericColumnData(selectedColumn.name),
-                          type: 'histogram',
-                          ...CHART_STYLES.histogram,
-                          nbinsx: 20,
-                          name: selectedColumn.name,
-                          hovertemplate: '%{x}: %{y}개<extra></extra>'
-                        } as Data]}
-                        layout={getModalLayout({
-                          title: { text: '' },
-                          xaxis: { title: selectedColumn.name },
-                          yaxis: { title: '빈도' },
-                          height: 380,
-                          showlegend: false,
-                          margin: { l: 50, r: 30, t: 20, b: 50 }
-                        })}
-                        config={{
-                          displayModeBar: true,
-                          displaylogo: false,
-                          responsive: true
-                        }}
-                      />
-                    </div>
-                  </TabsContent>
+                    <TabsContent value="histogram" className="mt-4">
+                      <div className="h-[400px] w-full">
+                        <PlotlyChartImproved
+                          data={[{
+                            x: getNumericColumnData(selectedColumn.name),
+                            type: 'histogram',
+                            ...CHART_STYLES.histogram,
+                            nbinsx: 20,
+                            name: selectedColumn.name,
+                            hovertemplate: '%{x}: %{y}개<extra></extra>'
+                          } as Data]}
+                          layout={getModalLayout({
+                            title: { text: '' },
+                            xaxis: { title: selectedColumn.name },
+                            yaxis: { title: '빈도' },
+                            height: 380,
+                            showlegend: false,
+                            margin: { l: 50, r: 30, t: 20, b: 50 }
+                          })}
+                          config={{
+                            displayModeBar: true,
+                            displaylogo: false,
+                            responsive: true
+                          }}
+                        />
+                      </div>
+                    </TabsContent>
 
-                  <TabsContent value="boxplot" className="mt-4">
-                    <div className="h-[400px] w-full">
-                      <PlotlyChartImproved
-                        data={[{
-                          y: getNumericColumnData(selectedColumn.name),
-                          type: 'box',
-                          ...CHART_STYLES.box,
-                          name: selectedColumn.name,
-                          boxmean: true,
-                          hovertemplate: '%{y}<extra></extra>'
-                        } as Data]}
-                        layout={getModalLayout({
-                          title: { text: '' },
-                          yaxis: { title: selectedColumn.name },
-                          height: 380,
-                          showlegend: false,
-                          margin: { l: 60, r: 30, t: 20, b: 40 }
-                        })}
-                        config={{
-                          displayModeBar: true,
-                          displaylogo: false,
-                          responsive: true
-                        }}
-                      />
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                    <TabsContent value="boxplot" className="mt-4">
+                      <div className="h-[400px] w-full">
+                        <PlotlyChartImproved
+                          data={[{
+                            y: getNumericColumnData(selectedColumn.name),
+                            type: 'box',
+                            ...CHART_STYLES.box,
+                            name: selectedColumn.name,
+                            boxmean: true,
+                            hovertemplate: '%{y}<extra></extra>'
+                          } as Data]}
+                          layout={getModalLayout({
+                            title: { text: '' },
+                            yaxis: { title: selectedColumn.name },
+                            height: 380,
+                            showlegend: false,
+                            margin: { l: 60, r: 30, t: 20, b: 40 }
+                          })}
+                          config={{
+                            displayModeBar: true,
+                            displaylogo: false,
+                            responsive: true
+                          }}
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                     <div className="bg-muted rounded p-3">
                       <p className="text-sm text-muted-foreground">평균</p>
                       <p className="text-lg font-bold">{selectedColumn.mean?.toFixed(2)}</p>
@@ -759,6 +760,7 @@ export const DataValidationStepWithCharts = memo(function DataValidationStepWith
                       <p className="text-lg font-bold">{selectedColumn.outliers?.length || 0}개</p>
                     </div>
                   </div>
+                </>
               ) : selectedColumn.type === 'categorical' && selectedColumn.topCategories ? (
                 <div>
                   <BarChartComponent

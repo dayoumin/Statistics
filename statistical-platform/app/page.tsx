@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Upload, CheckCircle, BarChart3, FileText, Sparkles, HelpCircle, X, Clock } from 'lucide-react'
 import { ProgressStepper } from '@/components/smart-flow/ProgressStepper'
 import { DataUploadStepImproved } from '@/components/smart-flow/steps/DataUploadStepImproved'
-import { DataValidationStepWithCharts } from '@/components/smart-flow/steps/DataValidationStepWithCharts'
+import { DataValidationStepRefactored } from '@/components/smart-flow/steps/DataValidationStepRefactored'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { PurposeInputStep } from '@/components/smart-flow/steps/PurposeInputStep'
 import { AnalysisExecutionStep } from '@/components/smart-flow/steps/AnalysisExecutionStep'
 import { ResultsActionStep } from '@/components/smart-flow/steps/ResultsActionStep'
@@ -285,10 +286,12 @@ export default function SmartFlowPageRefactored() {
 
             {currentStep === 2 && (
               <div className="animate-in fade-in duration-500">
-                <DataValidationStepWithCharts
-                  validationResults={validationResults}
-                  data={uploadedData}
-                />
+                <ErrorBoundary>
+                  <DataValidationStepRefactored
+                    validationResults={validationResults}
+                    data={uploadedData}
+                  />
+                </ErrorBoundary>
               </div>
             )}
 
