@@ -35,9 +35,9 @@ export default function SmartAnalysisPage() {
   const [currentStep, setCurrentStep] = useState<Step>('upload')
   const [datasetInfo, setDatasetInfo] = useState<DatasetInfo | null>(null)
   const [assumptionResults, setAssumptionResults] = useState<AssumptionResults | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [selectedAnalysisType, setSelectedAnalysisType] = useState<string | null>(null)
+  const [_progress, _setProgress] = useState(0)
+  const [_isAnalyzing, _setIsAnalyzing] = useState(false)
+  const [_selectedAnalysisType, setSelectedAnalysisType] = useState<string | null>(null)
   const [analysisResultId, setAnalysisResultId] = useState<string | null>(null)
   
   const { addAnalysisResult } = useAppStore()
@@ -307,7 +307,7 @@ export default function SmartAnalysisPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-medium mb-3">등분산성 검정 (Levene's Test)</h4>
+                  <h4 className="font-medium mb-3">등분산성 검정 (Levene&apos;s Test)</h4>
                   <div className="space-y-2">
                     {Object.entries(assumptionResults.homogeneity).map(([test, result]) => (
                       <div key={test} className="flex items-center justify-between p-3 border rounded">
@@ -375,7 +375,7 @@ export default function SmartAnalysisPage() {
               </p>
               <Button onClick={() => {
                 setCurrentStep('analysis')
-                setIsAnalyzing(true)
+                _setIsAnalyzing(true)
                 // 3초 후 자동으로 결과 단계로 이동하고 분석 결과 저장
                 setTimeout(() => {
                   // 분석 결과를 store에 저장
@@ -398,12 +398,12 @@ export default function SmartAnalysisPage() {
                       interpretation: "두 그룹 간의 차이가 통계적으로 유의합니다 (p < 0.05). 효과크기는 중간 정도로 실질적인 의미가 있는 차이입니다."
                     },
                     assumptions: {
-                      normality: Object.entries(assumptionResults?.normality || {}).map(([variable, result]) => ({
+                      normality: Object.entries(assumptionResults?.normality || {}).map(([_variable, result]) => ({
                         passed: result.isNormal,
                         pValue: result.pValue,
                         test: result.test
                       })),
-                      homogeneity: Object.entries(assumptionResults?.homogeneity || {}).map(([test, result]) => ({
+                      homogeneity: Object.entries(assumptionResults?.homogeneity || {}).map(([_test, result]) => ({
                         passed: result.isHomogeneous,
                         pValue: result.pValue,
                         test: result.test

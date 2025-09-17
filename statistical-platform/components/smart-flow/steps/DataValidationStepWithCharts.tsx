@@ -176,54 +176,168 @@ export const DataValidationStepWithCharts = memo(function DataValidationStepWith
 
   return (
     <div className="space-y-6">
-      {/* 검증 요약 */}
+      {/* 데이터 검증 개요 */}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold mb-2">데이터 품질 검증 보고서</h2>
+        <p className="text-muted-foreground text-sm mb-4">
+          업로드된 데이터의 구조, 품질, 통계적 특성을 종합적으로 분석하여 분석 가능성을 평가합니다.
+        </p>
+      </div>
+
+      {/* 검증 요약 카드 */}
       <div className={`rounded-lg p-6 ${
         hasErrors ? 'bg-gray-100 dark:bg-gray-900' :
         hasWarnings ? 'bg-gray-50 dark:bg-gray-800' :
         'bg-white dark:bg-gray-950'
       }`}>
-        <div className="flex items-center space-x-3 mb-4">
-          {hasErrors ? (
-            <XCircle className="w-6 h-6 text-gray-800 dark:text-gray-200" />
-          ) : hasWarnings ? (
-            <AlertTriangle className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          ) : (
-            <CheckCircle className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-          )}
-          <h3 className="text-lg font-semibold">
-            {hasErrors ? '데이터 검증 실패' :
-             hasWarnings ? '데이터 검증 완료 (경고 있음)' :
-             '데이터 검증 완료'}
-          </h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            {hasErrors ? (
+              <XCircle className="w-6 h-6 text-gray-800 dark:text-gray-200" />
+            ) : hasWarnings ? (
+              <AlertTriangle className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            ) : (
+              <CheckCircle className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+            )}
+            <div>
+              <h3 className="text-lg font-semibold">
+                {hasErrors ? '데이터 검증 실패' :
+                 hasWarnings ? '데이터 검증 완료 (주의 필요)' :
+                 '데이터 검증 통과'}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {hasErrors ? '데이터에 심각한 문제가 발견되어 분석을 진행할 수 없습니다.' :
+                 hasWarnings ? '일부 주의사항이 있지만 분석 진행이 가능합니다.' :
+                 '데이터 품질이 우수하여 모든 통계 분석이 가능합니다.'}
+              </p>
+            </div>
+          </div>
+          <Badge variant={hasErrors ? 'destructive' : hasWarnings ? 'secondary' : 'default'}>
+            품질 {hasErrors ? '불량' : hasWarnings ? '양호' : '우수'}
+          </Badge>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div className="bg-white dark:bg-background rounded p-3">
-            <p className="text-sm text-muted-foreground">총 행 수</p>
-            <p className="text-lg">{validationResults.totalRows}</p>
+        {/* 핵심 지표 요약 */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-sm uppercase tracking-wider text-muted-foreground">데이터 구조</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-background rounded-lg p-3 border">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-muted-foreground">관측치</p>
+                <Badge variant="outline" className="text-xs">Rows</Badge>
+              </div>
+              <p className="text-2xl font-bold">{validationResults.totalRows.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">데이터 포인트</p>
+            </div>
+            <div className="bg-white dark:bg-background rounded-lg p-3 border">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-muted-foreground">변수</p>
+                <Badge variant="outline" className="text-xs">Columns</Badge>
+              </div>
+              <p className="text-2xl font-bold">{validationResults.columnCount}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {numericColumns.length > 0 && `수치형 ${numericColumns.length}개`}
+              </p>
+            </div>
+            <div className="bg-white dark:bg-background rounded-lg p-3 border">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-muted-foreground">결측률</p>
+                <Badge variant="outline" className="text-xs">Missing</Badge>
+              </div>
+              <p className="text-2xl font-bold">
+                {((validationResults.missingValues / (validationResults.totalRows * validationResults.columnCount)) * 100).toFixed(1)}%
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                총 {validationResults.missingValues.toLocaleString()}개 셀
+              </p>
+            </div>
+            <div className="bg-white dark:bg-background rounded-lg p-3 border">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-muted-foreground">형식</p>
+                <Badge variant="outline" className="text-xs">Format</Badge>
+              </div>
+              <p className="text-2xl font-bold">{validationResults.dataType}</p>
+              <p className="text-xs text-muted-foreground mt-1">데이터 형식</p>
+            </div>
           </div>
-          <div className="bg-white dark:bg-background rounded p-3">
-            <p className="text-sm text-muted-foreground">변수 수</p>
-            <p className="text-lg">{validationResults.columnCount}</p>
-          </div>
-          <div className="bg-white dark:bg-background rounded p-3">
-            <p className="text-sm text-muted-foreground">결측값</p>
-            <p className="text-lg">{validationResults.missingValues}</p>
-          </div>
-          <div className="bg-white dark:bg-background rounded p-3">
-            <p className="text-sm text-muted-foreground">데이터 타입</p>
-            <p className="text-lg">{validationResults.dataType}</p>
-          </div>
+
+          {/* 데이터 품질 지표 */}
+          {columnStats && (
+            <div className="mt-4">
+              <h4 className="font-medium text-sm uppercase tracking-wider text-muted-foreground mb-3">품질 지표</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">완전성</p>
+                    <p className="text-xs text-muted-foreground">데이터 충실도</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {(100 - ((validationResults.missingValues / (validationResults.totalRows * validationResults.columnCount)) * 100)).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">일관성</p>
+                    <p className="text-xs text-muted-foreground">타입 일치도</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {(((columnStats.length - columnStats.filter(s => s.type === 'mixed').length) / columnStats.length) * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">정확성</p>
+                    <p className="text-xs text-muted-foreground">이상치 비율</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                      {(() => {
+                        const totalOutliers = columnStats.reduce((sum, col) => sum + (col.outliers?.length || 0), 0)
+                        const totalNumericValues = columnStats.reduce((sum, col) => sum + (col.type === 'numeric' ? col.numericCount : 0), 0)
+                        return totalNumericValues > 0 ? (100 - ((totalOutliers / totalNumericValues) * 100)).toFixed(1) : '100.0'
+                      })()}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 상세 분석 섹션 */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">상세 분석 결과</h3>
+          <p className="text-sm text-muted-foreground">
+            통계 분석 전 반드시 확인해야 할 데이터 특성을 다각도로 검토합니다
+          </p>
         </div>
       </div>
 
       {/* 상세 정보 탭 */}
       <Tabs defaultValue="variables" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="variables">변수 정보</TabsTrigger>
-          <TabsTrigger value="statistics">기초 통계</TabsTrigger>
-          <TabsTrigger value="visualization">시각화</TabsTrigger>
-          <TabsTrigger value="issues">문제점</TabsTrigger>
+          <TabsTrigger value="variables" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            변수 정보
+          </TabsTrigger>
+          <TabsTrigger value="statistics" className="flex items-center gap-2">
+            <BarChart className="w-4 h-4" />
+            기초 통계
+          </TabsTrigger>
+          <TabsTrigger value="visualization" className="flex items-center gap-2">
+            <LineChart className="w-4 h-4" />
+            시각화
+          </TabsTrigger>
+          <TabsTrigger value="issues" className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            문제점
+          </TabsTrigger>
         </TabsList>
 
         {/* 변수 정보 탭 */}

@@ -1,16 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Upload, CheckCircle, BarChart3, FileText, Sparkles, HelpCircle, X, Clock } from 'lucide-react'
-import { ProgressStepper } from '@/components/smart-flow/ProgressStepper'
-import { DataUploadStep } from '@/components/smart-flow/steps/DataUploadStep'
-import { DataValidationStep } from '@/components/smart-flow/steps/DataValidationStep'
-import { PurposeInputStep } from '@/components/smart-flow/steps/PurposeInputStep'
-import { AnalysisExecutionStep } from '@/components/smart-flow/steps/AnalysisExecutionStep'
-import { ResultsActionStep } from '@/components/smart-flow/steps/ResultsActionStep'
-import { AnalysisHistoryPanel } from '@/components/smart-flow/AnalysisHistoryPanel'
+
+// Lazy load heavy components for code splitting
+const ProgressStepper = lazy(() => import('@/components/smart-flow/ProgressStepper').then(m => ({ default: m.ProgressStepper })))
+const DataUploadStep = lazy(() => import('@/components/smart-flow/steps/DataUploadStep').then(m => ({ default: m.DataUploadStep })))
+const DataValidationStep = lazy(() => import('@/components/smart-flow/steps/DataValidationStep').then(m => ({ default: m.DataValidationStep })))
+const PurposeInputStep = lazy(() => import('@/components/smart-flow/steps/PurposeInputStep').then(m => ({ default: m.PurposeInputStep })))
+const AnalysisExecutionStep = lazy(() => import('@/components/smart-flow/steps/AnalysisExecutionStep').then(m => ({ default: m.AnalysisExecutionStep })))
+const ResultsActionStep = lazy(() => import('@/components/smart-flow/steps/ResultsActionStep').then(m => ({ default: m.ResultsActionStep })))
+const AnalysisHistoryPanel = lazy(() => import('@/components/smart-flow/AnalysisHistoryPanel').then(m => ({ default: m.AnalysisHistoryPanel })))
 import { useSmartFlowStore } from '@/lib/stores/smart-flow-store'
 import { DataValidationService } from '@/lib/services/data-validation-service'
 import {
@@ -22,11 +25,11 @@ import {
 } from '@/types/smart-flow'
 
 const steps: StepConfig[] = [
-  { id: 1, name: '데이터 업로드', icon: Upload, description: '분석할 데이터 파일을 업로드하세요' },
-  { id: 2, name: '데이터 검증', icon: CheckCircle, description: '데이터를 자동으로 검증합니다' },
-  { id: 3, name: '분석 목적', icon: Sparkles, description: '무엇을 알고 싶은지 알려주세요' },
-  { id: 4, name: '통계 분석', icon: BarChart3, description: '최적의 통계 방법으로 분석합니다' },
-  { id: 5, name: '결과 및 액션', icon: FileText, description: '결과를 확인하고 다음 단계를 선택하세요' }
+  { id: 1, name: '데이터 업로드', icon: Upload, description: '분석할 파일 선택' },
+  { id: 2, name: '데이터 확인', icon: CheckCircle, description: '데이터 구조와 품질 점검' },
+  { id: 3, name: '분석 목표 설정', icon: Sparkles, description: '답을 찾고 싶은 질문 정의' },
+  { id: 4, name: '분석 수행', icon: BarChart3, description: '최적 통계 방법으로 분석' },
+  { id: 5, name: '결과 해석', icon: FileText, description: '인사이트 확인 및 보고서 생성' }
 ]
 
 export default function SmartFlowPageRefactored() {
@@ -52,14 +55,14 @@ export default function SmartFlowPageRefactored() {
   const {
     currentStep,
     completedSteps,
-    uploadedFile,
+    _uploadedFile,
     uploadedData,
     validationResults,
     selectedMethod,
     analysisResults,
     isLoading,
     error,
-    setCurrentStep,
+    _setCurrentStep,
     setUploadedFile,
     setUploadedData,
     setValidationResults,
@@ -70,7 +73,7 @@ export default function SmartFlowPageRefactored() {
     canProceedToNext,
     goToNextStep,
     goToPreviousStep,
-    addCompletedStep,
+    _addCompletedStep,
     reset,
     navigateToStep,
     canNavigateToStep
@@ -117,7 +120,7 @@ export default function SmartFlowPageRefactored() {
   }
   
   // 데이터 정보 추출 (PurposeInputStep에 전달용)
-  const getDataInfo = () => {
+  const _getDataInfo = () => {
     if (!uploadedData) return null
     return DataValidationService.getDataInfo(uploadedData)
   }
@@ -229,18 +232,22 @@ export default function SmartFlowPageRefactored() {
               </div>
             </CardHeader>
             <CardContent>
-              <AnalysisHistoryPanel />
+              <Suspense fallback={<div className="h-32 animate-pulse bg-muted rounded" />}>
+                <AnalysisHistoryPanel />
+              </Suspense>
             </CardContent>
           </Card>
         )}
 
         {/* Progress Stepper */}
-        <ProgressStepper 
-          steps={steps}
-          currentStep={currentStep}
-          completedSteps={completedSteps}
-          onStepClick={handleStepClick}
-        />
+        <Suspense fallback={<div className="h-20 animate-pulse bg-muted rounded-lg" />}>
+          <ProgressStepper
+            steps={steps}
+            currentStep={currentStep}
+            completedSteps={completedSteps}
+            onStepClick={handleStepClick}
+          />
+        </Suspense>
 
         {/* 에러 메시지 표시 */}
         {error && (
@@ -277,43 +284,75 @@ export default function SmartFlowPageRefactored() {
               </div>
             )}
             
-            {currentStep === 1 && (
-              <div className="animate-in fade-in duration-500">
-                <DataUploadStep onUploadComplete={handleUploadComplete} />
-              </div>
-            )}
+            <ErrorBoundary>
+              {currentStep === 1 && (
+                <div className="animate-in fade-in duration-500">
+                  <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded" />}>
+                    <DataUploadStep
+                      onUploadComplete={handleUploadComplete}
+                      onNext={goToNextStep}
+                      canGoNext={canProceedToNext()}
+                      currentStep={currentStep}
+                      totalSteps={steps.length}
+                    />
+                  </Suspense>
+                </div>
+              )}
 
-            {currentStep === 2 && (
-              <div className="animate-in fade-in duration-500">
-                <DataValidationStep
-                  validationResults={validationResults}
-                  data={uploadedData}
-                />
-              </div>
-            )}
+              {currentStep === 2 && (
+                <div className="animate-in fade-in duration-500">
+                  <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded" />}>
+                    <DataValidationStep
+                      validationResults={validationResults}
+                      data={uploadedData}
+                      onNext={goToNextStep}
+                      onPrevious={goToPreviousStep}
+                      canGoNext={canProceedToNext()}
+                      canGoPrevious={currentStep > 1}
+                      currentStep={currentStep}
+                      totalSteps={steps.length}
+                    />
+                  </Suspense>
+                </div>
+              )}
 
-            {currentStep === 3 && (
-              <div className="animate-in fade-in duration-500">
-                <PurposeInputStep
-                  onPurposeSubmit={handlePurposeSubmit}
-                />
-              </div>
-            )}
+              {currentStep === 3 && (
+                <div className="animate-in fade-in duration-500">
+                  <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded" />}>
+                    <PurposeInputStep
+                      onPurposeSubmit={handlePurposeSubmit}
+                      validationResults={validationResults}
+                      data={uploadedData}
+                      onNext={goToNextStep}
+                      onPrevious={goToPreviousStep}
+                      canGoNext={canProceedToNext()}
+                      canGoPrevious={currentStep > 1}
+                      currentStep={currentStep}
+                      totalSteps={steps.length}
+                    />
+                  </Suspense>
+                </div>
+              )}
 
-            {currentStep === 4 && (
-              <div className="animate-in fade-in duration-500">
-                <AnalysisExecutionStep
-                  method={selectedMethod?.name || null}
-                  onAnalysisComplete={handleAnalysisComplete}
-                />
-              </div>
-            )}
+              {currentStep === 4 && (
+                <div className="animate-in fade-in duration-500">
+                  <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded" />}>
+                    <AnalysisExecutionStep
+                      method={selectedMethod?.name || null}
+                      onAnalysisComplete={handleAnalysisComplete}
+                    />
+                  </Suspense>
+                </div>
+              )}
 
-            {currentStep === 5 && (
-              <div className="animate-in fade-in duration-500">
-                <ResultsActionStep results={analysisResults} />
-              </div>
-            )}
+              {currentStep === 5 && (
+                <div className="animate-in fade-in duration-500">
+                  <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded" />}>
+                    <ResultsActionStep results={analysisResults} />
+                  </Suspense>
+                </div>
+              )}
+            </ErrorBoundary>
           </CardContent>
         </Card>
 

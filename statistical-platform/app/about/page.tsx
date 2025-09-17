@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +15,6 @@ import {
   FileText,
   Database,
   Shield,
-  Zap,
   Users,
   Award,
   Code2,
@@ -50,11 +50,11 @@ export default function AboutPage() {
                 className="text-lg px-8 py-6 group"
                 asChild
               >
-                <a href="/">
+                <Link href="/">
                   <Brain className="mr-2 h-5 w-5" />
                   스마트 분석 시작하기
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </a>
+                </Link>
               </Button>
               <Button
                 size="lg"
@@ -62,10 +62,10 @@ export default function AboutPage() {
                 className="text-lg px-8 py-6"
                 asChild
               >
-                <a href="/analysis">
+                <Link href="/analysis">
                   <BarChart3 className="mr-2 h-5 w-5" />
                   전통적 분석 도구
-                </a>
+                </Link>
               </Button>
             </div>
           </div>
@@ -279,7 +279,7 @@ export default function AboutPage() {
                   <div>
                     <h4 className="font-semibold">목적 기반 방법 추천</h4>
                     <p className="text-sm text-muted-foreground">
-                      "그룹 간 차이를 보고 싶어요" → t-test 또는 ANOVA 자동 선택
+                      &quot;그룹 간 차이를 보고 싶어요&quot; → t-test 또는 ANOVA 자동 선택
                     </p>
                   </div>
                 </div>
@@ -423,10 +423,10 @@ export default function AboutPage() {
                     className="text-lg px-8 py-6"
                     asChild
                   >
-                    <a href="/">
+                    <Link href="/">
                       <Sparkles className="mr-2 h-5 w-5" />
                       스마트 분석 시작
-                    </a>
+                    </Link>
                   </Button>
                   <Button
                     size="lg"

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FileUpload, InlineFileUpload } from "@/components/ui/file-upload"
-import { Upload, FileText, Database, Download, Eye, Settings, Trash2 } from "lucide-react"
+import { FileText, Database, Download, Eye, Trash2 } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { formatDistanceToNow } from "date-fns"
 

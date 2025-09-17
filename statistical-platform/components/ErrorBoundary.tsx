@@ -1,9 +1,9 @@
 'use client'
 
-import { Component, ReactNode } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import React, { Component, ReactNode } from 'react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface Props {
   children: ReactNode
@@ -13,62 +13,96 @@ interface Props {
 interface State {
   hasError: boolean
   error: Error | null
+  errorInfo: React.ErrorInfo | null
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null
+    }
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+    return {
+      hasError: true,
+      error,
+      errorInfo: null
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
-    // 프로덕션에서는 에러 로깅 서비스로 전송 가능
-    // if (process.env.NODE_ENV === 'production') {
-    //   logErrorToService(error, errorInfo)
-    // }
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    this.setState({
+      error,
+      errorInfo
+    })
+  }
+
+  handleReset = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    })
   }
 
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
-        return this.props.fallback
+        return <>{this.props.fallback}</>
       }
 
       return (
-        <Card className="max-w-2xl mx-auto mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              오류가 발생했습니다
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              예상치 못한 오류가 발생했습니다. 페이지를 새로고침해주세요.
-            </p>
-            {this.state.error && (
-              <details className="text-sm">
-                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                  기술적 세부사항
-                </summary>
-                <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-                  {this.state.error.toString()}
-                </pre>
-              </details>
-            )}
-            <Button
-              onClick={() => window.location.reload()}
-              className="w-full"
-            >
-              페이지 새로고침
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="min-h-[400px] flex items-center justify-center p-6">
+          <Card className="max-w-lg w-full">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-destructive" />
+                <CardTitle>오류가 발생했습니다</CardTitle>
+              </div>
+              <CardDescription>
+                예기치 않은 오류가 발생했습니다. 문제가 지속되면 페이지를 새로고침해주세요.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {this.state.error && (
+                <div className="bg-muted rounded-lg p-3">
+                  <p className="text-sm font-mono text-muted-foreground">
+                    {this.state.error.toString()}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex space-x-2">
+                <Button onClick={this.handleReset} variant="default">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  다시 시도
+                </Button>
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                >
+                  페이지 새로고침
+                </Button>
+              </div>
+
+              {process.env.NODE_ENV === 'development' && this.state.errorInfo && (
+                <details className="mt-4">
+                  <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                    개발자용 상세 정보
+                  </summary>
+                  <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-auto max-h-64">
+                    {this.state.errorInfo.componentStack}
+                  </pre>
+                </details>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )
     }
 

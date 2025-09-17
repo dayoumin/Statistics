@@ -2,16 +2,14 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { 
-  Brain, 
-  Target, 
-  CheckCircle2, 
-  ArrowRight, 
-  HelpCircle, 
-  BookOpen, 
+import {
+  Brain,
+  Target,
+  CheckCircle2,
+  HelpCircle,
+  BookOpen,
   Download,
   Lightbulb,
   MessageSquare,
@@ -171,7 +169,7 @@ export default function HelpPage() {
                 <Lightbulb className="h-4 w-4" />
                 <AlertDescription>
                   <strong>중요:</strong> 데이터의 첫 번째 행에는 반드시 열 이름(변수명)을 입력해주세요. 
-                  예: "나이", "성별", "점수" 등
+                  예: &quot;나이&quot;, &quot;성별&quot;, &quot;점수&quot; 등
                 </AlertDescription>
               </Alert>
 

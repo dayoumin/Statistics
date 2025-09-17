@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Upload, CheckCircle, BarChart3, FileText, Sparkles, HelpCircle, X, Clock } from 'lucide-react'
 import { ProgressStepper } from '@/components/smart-flow/ProgressStepper'
-import { DataUploadStepImproved } from '@/components/smart-flow/steps/DataUploadStepImproved'
-import { DataValidationStepRefactored } from '@/components/smart-flow/steps/DataValidationStepRefactored'
+import { DataUploadStep } from '@/components/smart-flow/steps/DataUploadStep'
+import { DataValidationStep } from '@/components/smart-flow/steps/DataValidationStep'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { PurposeInputStep } from '@/components/smart-flow/steps/PurposeInputStep'
 import { AnalysisExecutionStep } from '@/components/smart-flow/steps/AnalysisExecutionStep'
@@ -53,14 +53,14 @@ export default function SmartFlowPageRefactored() {
   const {
     currentStep,
     completedSteps,
-    uploadedFile,
+    _uploadedFile,
     uploadedData,
     validationResults,
     selectedMethod,
     analysisResults,
     isLoading,
     error,
-    setCurrentStep,
+    _setCurrentStep,
     setUploadedFile,
     setUploadedData,
     setValidationResults,
@@ -71,7 +71,7 @@ export default function SmartFlowPageRefactored() {
     canProceedToNext,
     goToNextStep,
     goToPreviousStep,
-    addCompletedStep,
+    _addCompletedStep,
     reset,
     navigateToStep,
     canNavigateToStep
@@ -118,7 +118,7 @@ export default function SmartFlowPageRefactored() {
   }
   
   // 데이터 정보 추출 (PurposeInputStep에 전달용)
-  const getDataInfo = () => {
+  const _getDataInfo = () => {
     if (!uploadedData) return null
     return DataValidationService.getDataInfo(uploadedData)
   }
@@ -280,14 +280,14 @@ export default function SmartFlowPageRefactored() {
             
             {currentStep === 1 && (
               <div className="animate-in fade-in duration-500">
-                <DataUploadStepImproved onUploadComplete={handleUploadComplete} />
+                <DataUploadStep onUploadComplete={handleUploadComplete} />
               </div>
             )}
 
             {currentStep === 2 && (
               <div className="animate-in fade-in duration-500">
                 <ErrorBoundary>
-                  <DataValidationStepRefactored
+                  <DataValidationStep
                     validationResults={validationResults}
                     data={uploadedData}
                   />

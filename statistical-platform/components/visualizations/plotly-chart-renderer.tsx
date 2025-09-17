@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import Plotly from 'plotly.js-dist-min'
+import Plotly from 'plotly.js-basic-dist'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Maximize2, Camera } from 'lucide-react'
@@ -16,13 +16,18 @@ interface PlotlyChartRendererProps {
   onDownload?: () => void
 }
 
-export function PlotlyChartRenderer({ 
-  chartData, 
+export function PlotlyChartRenderer({
+  chartData,
   title,
-  onDownload 
+  onDownload
 }: PlotlyChartRendererProps) {
   const chartRef = useRef<HTMLDivElement>(null)
-  const chartId = useRef(`plotly-chart-${Date.now()}-${Math.random()}`)
+  const chartId = useRef<string>('plotly-chart-default')
+
+  useEffect(() => {
+    // 클라이언트 사이드에서만 ID 생성
+    chartId.current = `plotly-chart-${Date.now()}-${Math.random()}`
+  }, [])
 
   useEffect(() => {
     if (!chartRef.current || !chartData) return
@@ -36,7 +41,7 @@ export function PlotlyChartRenderer({
       modeBarButtonsToAdd: [],
       toImageButtonOptions: {
         format: 'png',
-        filename: `chart-${Date.now()}`,
+        filename: `chart-export`,
         height: 800,
         width: 1200,
         scale: 2
@@ -70,7 +75,7 @@ export function PlotlyChartRenderer({
       format: 'png',
       width: 1200,
       height: 800,
-      filename: `chart-${Date.now()}`
+      filename: `chart-export`
     })
   }
 
@@ -118,7 +123,7 @@ export function PlotlyChartRenderer({
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `interactive-chart-${Date.now()}.html`
+    link.download = `interactive-chart.html`
     link.click()
     URL.revokeObjectURL(url)
   }

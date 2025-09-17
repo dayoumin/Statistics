@@ -11,12 +11,11 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { 
-  Settings, 
-  User, 
-  Bell, 
-  Shield, 
-  Palette, 
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
   Download, 
   HelpCircle, 
   Save,
@@ -63,7 +62,7 @@ export default function SettingsPage() {
       toast.success("Settings saved successfully!", {
         description: "Your preferences have been updated."
       })
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to save settings", {
         description: "Please try again later."
       })
@@ -240,7 +239,7 @@ export default function SettingsPage() {
                 <div className="space-y-1">
                   <Label>Effect Size Reporting</Label>
                   <p className="text-sm text-muted-foreground">
-                    Automatically calculate and display effect sizes (Cohen's d, eta-squared, etc.)
+                    Automatically calculate and display effect sizes (Cohen&apos;s d, eta-squared, etc.)
                   </p>
                 </div>
                 <Switch

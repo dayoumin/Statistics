@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Upload, BarChart3, Calculator, TrendingUp, Database, Zap, Brain } from "lucide-react"
+import { Search, BarChart3, Calculator, TrendingUp, Database, Zap, Brain } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -92,8 +92,8 @@ export function AnalysisInterface() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
 
-  const filteredCategories = selectedCategory === "all" 
-    ? categories 
+  const _filteredCategories = selectedCategory === "all"
+    ? categories
     : categories.filter(cat => cat.id === selectedCategory)
 
   const filteredTests = searchQuery

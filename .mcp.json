@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@executeautomation/playwright-mcp-server"]
+    },
+    "filesystem": {
+      "command": "uvx",
+      "args": ["@modelcontextprotocol/server-filesystem", "--root", "./"]
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["@modelcontextprotocol/server-git"]
+    },
+    "memory": {
+      "command": "uvx",
+      "args": ["@modelcontextprotocol/server-memory"]
+    }
+  }
+}
