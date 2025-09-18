@@ -4,10 +4,10 @@ import dynamic from 'next/dynamic'
 import { memo } from 'react'
 
 // Dynamic import for Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), {
+const Plot = dynamic(() => import('react-plotly.js').then(mod => mod.default || mod) as any, {
   ssr: false,
   loading: () => <div className="h-full flex items-center justify-center">차트 로딩중...</div>
-})
+}) as any
 
 interface PlotlyChartProps {
   data: any[]

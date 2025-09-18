@@ -136,11 +136,37 @@ export class SmartAnalysisEngine {
       recommendations.push(...questionBasedRecommendations)
     }
     
-    // 신뢰도 순으로 정렬
-    return recommendations.sort((a, b) => {
-      const confidenceOrder = { 'high': 3, 'medium': 2, 'low': 1 }
-      return confidenceOrder[b.confidence] - confidenceOrder[a.confidence]
+    // 중복 추천 병합: 동일 method는 하나로, 더 높은 신뢰도 유지
+    const confidenceRank = { 'high': 3, 'medium': 2, 'low': 1 }
+    const merged: Record<string, AnalysisRecommendation> = {}
+    for (const rec of recommendations) {
+      const key = rec.method
+      if (!merged[key]) {
+        merged[key] = rec
+      } else {
+        const keep = confidenceRank[rec.confidence] >= confidenceRank[merged[key].confidence] ? rec : merged[key]
+        merged[key] = {
+          ...keep,
+          // 다음 단계/가정은 합집합으로 보존
+          assumptions: Array.from(new Set([...(merged[key].assumptions || []), ...(rec.assumptions || [])])),
+          nextSteps: Array.from(new Set([...(merged[key].nextSteps || []), ...(rec.nextSteps || [])]))
+        }
+      }
+    }
+
+    const deduped = Object.values(merged)
+
+    // 신뢰도 정규화: 연구질문 기반만 있고 데이터 근거가 약하면 medium 이하로 완화
+    const normalized = deduped.map(rec => {
+      const hasAssumptions = (rec.assumptions && rec.assumptions.length > 0)
+      if (!hasAssumptions && rec.confidence === 'high') {
+        return { ...rec, confidence: 'medium' }
+      }
+      return rec
     })
+
+    // 신뢰도 순으로 정렬
+    return normalized.sort((a, b) => confidenceRank[b.confidence] - confidenceRank[a.confidence])
   }
   
   /**

@@ -83,24 +83,64 @@
 
 ## 4.3 분석 실행 흐름
 
-### 4.3.1 공통 실행 프로세스
+### 4.3.1 지능형 실행 프로세스
 
 ```
 Step 3 결과 수신
-    ↓
+     ↓
 데이터 유효성 확인
-    ↓
+     ↓
 결측값 처리
-    ↓
+     ↓
 [가정 검정] (필요시)
-    ↓
-주 분석 실행
-    ↓
+     ↓
+🔍 최종 가정 체크
+     ├─ 가정 충족 → 주 분석 실행
+     └─ 가정 위반 → 자동 대안 선택
+         ↓
+     🆚 원래 방법 + 대안 방법 비교
+         ↓
+     📊 결과 비교 및 해석 생성
+         ↓
 추가 통계량 계산
-    ↓
+     ↓
 결과 포맷팅
-    ↓
+     ↓
 Step 5로 전달
+```
+
+#### 가정 위반 시 자동 대안 로직
+```javascript
+const intelligentAnalysis = async (method) => {
+  const { assumptions } = store.getValidationResults();
+
+  // 🔍 최종 체크
+  const finalCheck = {
+    methodAppropriate: validateMethod(method, data),
+    assumptionsMet: checkAssumptions(method, assumptions),
+    sampleSizeAdequate: checkSampleSize(method, data)
+  };
+
+  if (!finalCheck.assumptionsMet) {
+    // 🆕 자동 대안 실행
+    const alternative = selectAlternative(method, assumptions);
+
+    return {
+      primary: await runAnalysis(method),        // 원래 방법
+      alternative: await runAnalysis(alternative), // 대안 방법
+      comparison: compareResults(primary, alternative),
+      recommendation: generateInterpretation()
+    };
+  }
+
+  // 정상 실행
+  return {
+    results: await runAnalysis(method),
+    effectSize: calculateEffectSize(method, results),
+    power: calculatePower(method, data),
+    interpretation: generateInterpretation(results)
+  };
+};
 ```
 
 ### 4.3.2 방법별 특수 처리
@@ -180,15 +220,26 @@ Step 5로 전달
 
 ## 4.5 오류 처리
 
-### 4.5.1 복구 가능 오류
+### 4.5.1 가정 위반 자동 처리
 
 ```
-⚠️ 가정 위반 감지
+⚠️ 가정 위반 감지 - 자동 대안 실행
 
-정규성 가정이 충족되지 않습니다 (p=0.003)
+원래 방법: 독립표본 t-test
+문제: 정규성 가정 위반 (p=0.003)
 
-선택 옵션:
-[Mann-Whitney로 변경] [그대로 진행] [취소]
+자동 선택된 대안: Mann-Whitney U test
+
+실행 중...
+• 원래 방법 (t-test): t=2.145, p=0.034
+• 대안 방법 (Mann-Whitney): U=1234, p=0.028
+
+📊 결과 비교:
+• 두 방법 모두 유의미한 차이 발견
+• 효과 크기: t-test d=0.43, Mann-Whitney r=0.31
+• 결론: 두 방법의 결론이 일치함 (강건함 확인)
+
+💡 추천: Mann-Whitney U test 사용 (비모수 방법이 더 안전)
 ```
 
 ### 4.5.2 치명적 오류

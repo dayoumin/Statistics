@@ -26,6 +26,8 @@ import {
 } from '@/lib/statistics/variable-mapping'
 import type { PurposeInputStepProps } from '@/types/smart-flow-navigation'
 import { logger } from '@/lib/utils/logger'
+import { useSmartFlowStore } from '@/lib/stores/smart-flow-store'
+import { SmartRecommender } from '@/lib/services/smart-recommender'
 
 export function PurposeInputStep({
   onPurposeSubmit,
@@ -42,6 +44,9 @@ export function PurposeInputStep({
   const [showRecommendations, setShowRecommendations] = useState(false)
   const [variableMapping, setVariableMapping] = useState<VariableMapping | null>(null)
   const [showVariableMapping, setShowVariableMapping] = useState(false)
+
+  // 스토어에서 가정 결과와 데이터 특성 사용
+  const { assumptionResults, dataCharacteristics } = useSmartFlowStore()
 
   // 데이터 프로파일 생성
   const dataProfile = useMemo(() => {
@@ -83,11 +88,84 @@ export function PurposeInputStep({
     }
   }, [validationResults, data])
 
-  // 추천 방법 가져오기
+  // 규칙 기반 추천
   const recommendedMethods = useMemo(() => {
     if (!dataProfile) return []
     return recommendMethods(dataProfile)
   }, [dataProfile])
+
+  // SmartRecommender 기반 추천 (가정 플래그 반영 + 200ms 디바운스)
+  const [smartMethods, setSmartMethods] = useState<StatisticalMethod[]>([])
+  useEffect(() => {
+    if (!validationResults || !data) return
+
+    const timer = setTimeout(() => {
+      try {
+        // 컬럼 타입/이름 수집 (없으면 안전한 기본값)
+        const columns: any[] = validationResults.columns || []
+        const columnTypes = columns.map((c) => (c.type === 'date' ? 'datetime' : c.type))
+        const columnNames = columns.map((c) => c.name)
+
+        // 결측/이상치 비율 추정
+        const missingRatio = (() => {
+          const denom = (validationResults.totalRows || 0) * (validationResults.columnCount || 0)
+          if (!denom) return 0
+          return Math.max(0, Math.min(1, (validationResults.missingValues || 0) / denom))
+        })()
+
+        const outlierRatio = (() => {
+          const stats = (validationResults as any).columnStats || []
+          const outliers = stats.reduce((sum: number, s: any) => sum + (s.outliers?.length || 0), 0)
+          const denom = validationResults.totalRows || 0
+          if (!denom) return 0
+          return Math.max(0, Math.min(1, outliers / denom))
+        })()
+
+        // 가정 플래그
+        const isNormallyDistributed = (
+          assumptionResults?.normality?.shapiroWilk?.isNormal === true ||
+          assumptionResults?.normality?.kolmogorovSmirnov?.isNormal === true
+        )
+        const isHomoscedastic = (
+          assumptionResults?.homogeneity?.levene?.equalVariance ??
+          assumptionResults?.homogeneity?.bartlett?.equalVariance ?? undefined
+        ) as boolean | undefined
+
+        const context = {
+          purposeText: purpose || '',
+          dataShape: {
+            rows: data.length,
+            columns: validationResults.columnCount || columns.length || 0,
+            columnTypes,
+            columnNames
+          },
+          dataQuality: {
+            missingRatio,
+            outlierRatio,
+            isNormallyDistributed,
+            isHomoscedastic
+          }
+        }
+
+        const result = SmartRecommender.recommend(context as any)
+        // SmartRecommender가 반환하는 방법을 표준 타입으로 사용 (id/name/description/category 필드 호환)
+        setSmartMethods(result.methods || [])
+      } catch (e) {
+        console.error('SmartRecommender failed:', e)
+        setSmartMethods([])
+      }
+    }, 200)
+
+    return () => clearTimeout(timer)
+  }, [purpose, validationResults, data, assumptionResults])
+
+  // 두 추천 소스를 병합 (id 기준으로 중복 제거, Smart 우선 노출)
+  const mergedRecommendations = useMemo(() => {
+    const map = new Map<string, StatisticalMethod>()
+    for (const m of smartMethods) map.set(m.id, m)
+    for (const m of recommendedMethods) if (!map.has(m.id)) map.set(m.id, m)
+    return Array.from(map.values())
+  }, [smartMethods, recommendedMethods])
 
   // 선택된 질문 유형에 따른 방법들
   const filteredMethods = useMemo(() => {
@@ -119,7 +197,7 @@ export function PurposeInputStep({
 
     // 변수 자동 매핑
     if (validationResults?.columns) {
-      const columnInfo: ColumnInfo[] = validationResults.columns.map((col: ColumnData) => ({
+      const columnInfo: ColumnInfo[] = (validationResults.columns as any[]).map((col: any) => ({
         name: col.name,
         type: col.type,
         uniqueValues: col.uniqueValues,
@@ -172,7 +250,7 @@ export function PurposeInputStep({
 
           {/* AI 추천 방법 */}
           <RecommendedMethods
-            methods={recommendedMethods}
+            methods={mergedRecommendations}
             selectedMethod={selectedMethod}
             showRecommendations={showRecommendations}
             onToggle={() => setShowRecommendations(!showRecommendations)}
@@ -248,27 +326,6 @@ export function PurposeInputStep({
           )}
         </div>
       </CardContent>
-
-      <CardFooter className="border-t pt-4">
-        <div className="flex justify-between w-full">
-          <Button
-            variant="outline"
-            onClick={onPrevious}
-            disabled={!canGoPrevious}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            이전 단계
-          </Button>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={!selectedMethod}
-          >
-            다음 단계
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
-        </div>
-      </CardFooter>
     </Card>
   )
 }

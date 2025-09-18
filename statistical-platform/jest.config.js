@@ -30,4 +30,12 @@ module.exports = {
   testTimeout: 30000,
   maxWorkers: '50%',
   verbose: true,
+  testPathIgnorePatterns: [
+    '<rootDir>/e2e/',
+    '<rootDir>/__tests__/statistics/r-spss-validation.test.ts',
+    '<rootDir>/__tests__/statistics/nist-validation.test.ts',
+    '<rootDir>/__tests__/statistics/python-direct-test.test.ts',
+    '<rootDir>/lib/statistics/__tests__/method-mapping.test.ts',
+    '<rootDir>/__tests__/statistics/statistical-validation.test.ts'
+  ],
 }

@@ -6,7 +6,7 @@ import type { Data, Layout, Config } from 'plotly.js'
 import { getDefaultLayout, DEFAULT_CONFIG } from '@/lib/plotly-config'
 
 // Dynamic import for Plotly to avoid SSR issues
-const Plot = dynamic(() => import('react-plotly.js'), {
+const Plot = dynamic(() => import('react-plotly.js').then(mod => mod.default || mod) as any, {
   ssr: false,
   loading: () => (
     <div className="h-full flex items-center justify-center">
@@ -16,7 +16,7 @@ const Plot = dynamic(() => import('react-plotly.js'), {
       </div>
     </div>
   )
-})
+}) as any
 
 interface PlotlyChartProps {
   data: Data[]

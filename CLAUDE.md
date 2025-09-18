@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **사후분석**: Tukey HSD, Games-Howell, Dunn's test
 - **고급 분석**: 검정력 분석, 효과크기, 다중비교 보정
 
-## 🏗️ 프로젝트 구조 (Next.js 14)
+## 🏗️ 프로젝트 구조 (Next.js 15)
 
 ### 🎯 핵심 개발 방향
 > **"단일 페이지 통합 분석 인터페이스" - 한 화면에서 모든 분석 완성**
@@ -46,25 +46,17 @@ D:\Projects\Statics\
 │               └── constants/     # 상수 및 타입
 ├── lib/                          # 유틸리티 라이브러리
 │   ├── utils.ts                  # 공통 유틸
-│   ├── store.ts                  # 상태 관리 (Zustand)
-│   ├── statistics/               # 통계 분석 모듈 (리팩토링됨)
-│   │   ├── index.ts              # 통합 export
-│   │   ├── types.ts              # 타입 정의
-│   │   ├── utils.ts              # 공통 유틸리티
-│   │   ├── descriptive.ts        # 기술통계 (3개 함수)
-│   │   ├── t-tests.ts            # t-검정 (4개 함수)
-│   │   ├── anova.ts              # 분산분석 & 사후검정 (5개 함수)
-│   │   ├── regression.ts         # 회귀분석 (4개 함수)
-│   │   ├── nonparametric.ts      # 비모수검정 (5개 함수)
-│   │   └── advanced.ts           # 고급분석 (6개 함수)
-│   └── pyodide/                  # Pyodide 통합
+│   ├── stores/                   # 상태 관리
+│   ├── services/                 # 서비스 로직
+│   │   └── pyodide-statistics.ts # Pyodide 통계 엔진
+│   └── statistics/               # 통계 분석 모듈
 ├── public/                       # 정적 파일
 ├── test-data/                    # 테스트용 CSV 파일들
 └── 계획 문서들/                   # 프로젝트 계획서들
 ```
 
 ### 🔴 현재 개발 상태
-**Phase 1 Week 3 완료** (2025-09-16)
+**Phase 1 Week 4 진행 중** (2025-09-18)
 
 #### ✅ Week 1 완료 (2025-09-11)
 - 5개 계획 문서 작성 완료 (A급 품질)
@@ -98,20 +90,29 @@ D:\Projects\Statics\
 - ✅ **결과 시각화 컴포넌트** (ResultsVisualization.tsx)
 - ✅ About 페이지 추가 (플랫폼 소개)
 
-#### 🔄 Week 4 진행 중 (2025-09-17 ~ 23) - 고급 기능 구현
-**핵심 목표: 코드 리팩토링 및 성능 최적화**
+#### 🔄 Week 4 진행 중 (2025-09-17 ~ 23) - Pyodide 통계 엔진 및 UI 개선
 
-**Day 1 완료 (2025-09-17):**
-- ✅ **DataValidationStepWithCharts.tsx 리팩토링 완료**
-  - 780줄 단일 파일 → 8개 모듈화된 컴포넌트 (각 200줄 이하)
-  - 차트, 유틸, 상수, 타입 분리
-  - 재사용성 및 유지보수성 대폭 향상
-- ✅ 빌드 오류 수정 및 앱 정상 실행 확인
+**완료된 작업:**
+- ✅ **Pyodide 통계 서비스 구현** (`lib/services/pyodide-statistics.ts`)
+- ✅ **27개 통계 메서드 구현**
+- ✅ **테스트 환경 구축** (Jest + Pyodide)
+- ✅ **통계 카테고리별 페이지** (`/analysis/[category]`)
+- ✅ **DataValidationStep 리팩토링**
 
-**남은 작업:**
-- [ ] 애니메이션 적용 (Framer Motion)
-- [ ] 성능 최적화 (메모이제이션, 코드 분할)
-- [ ] 전체 플로우 통합 테스트
+**현재 진행 작업:**
+- [ ] 전체 플로우 통합
+- [ ] 성능 최적화
+- [ ] E2E 테스트
+
+## 🚀 통계분석 프로세스
+
+### 5단계 지능형 프로세스
+1. **스마트 데이터 업로드**: 자동 형식 감지, 품질 평가
+2. **지능형 데이터 검증**: 3탭 체계 (기초통계, 가정검정, 시각화)
+3. **자동 분석 추천**: 데이터 특성 기반 방법 제안
+4. **지능형 분석 실행**: 가정 위반 시 대안 자동 실행
+5. **스마트 결과 해석**: 자동 해석 및 액션 제안
+
 
 ## 📋 개발 가이드라인
 
@@ -142,7 +143,7 @@ Frontend:
 ## ⚠️ 극히 중요: 통계 분석 구현 원칙
 
 ### 🔴 필수 준수 사항 - 절대 어기지 마세요!
-**모든 통계 계산은 반드시 Pyodide를 통해 Python의 SciPy/NumPy를 사용해야 합니다.**
+**모든 통계 계산은 반드시 Pyodide를 통해 Python의 과학 계산 라이브러리를 사용해야 합니다.**
 
 **⚠️ 이 규칙을 어기면 소프트웨어를 사용할 수 없습니다!**
 - 통계 분석의 신뢰성이 가장 중요합니다
@@ -156,9 +157,14 @@ Frontend:
 3. **수학 공식 직접 코딩 금지**: t-test, ANOVA 등의 수식을 직접 코딩하지 마세요
 
 #### ✅ 반드시 해야 할 것
-1. **SciPy 사용**: 모든 통계 계산은 scipy.stats 사용
-2. **신뢰성 보장**: SciPy는 수십 년간 검증된 과학 계산 라이브러리
-3. **정확도 우선**: 통계 분석의 정확도가 가장 중요
+1. **Python 과학 계산 라이브러리 사용**:
+   - **SciPy**: 기본 통계 검정 및 분석
+   - **statsmodels**: 고급 통계 모델 (ANOVA, 회귀분석, 시계열)
+   - **scikit-learn**: 머신러닝 및 다변량 분석
+   - **pingouin**: 효과크기, 검정력 분석
+   - **scikit-posthocs**: 사후검정 (Dunn, Nemenyi 등)
+2. **신뢰성 보장**: 검증된 라이브러리만 사용
+3. **정확도 우선**: R/SPSS와 동일한 결과 보장
 4. **빠른 개발**: 검증된 라이브러리로 개발 시간 단축
 
 ### 올바른 통계 엔진 사용 방법
@@ -184,59 +190,78 @@ const result = await pyodide.runPython(`
 `)
 ```
 
-### 📈 통계 곈4산 구현 현황 (2025-01-17 업데이트)
+### 📈 통계 계산 구현 현황 (2025-09-18 업데이트)
 
 #### ✅ Pyodide 기반 구현 완료
 **파일**: `lib/services/pyodide-statistics.ts`
 
-구현된 통계 기능:
-1. **정규성 검정**: Shapiro-Wilk test (`scipy.stats.shapiro`)
-2. **이상치 탐지**: IQR 방법 (Q1-1.5*IQR, Q3+1.5*IQR)
-3. **등분산성 검정**: Levene's test (`scipy.stats.levene`)
-4. **기술통곈4**: 평균, 중앙값, 표준편차, 왓도, 첨도
-5. **상관분석**: Pearson & Spearman (`scipy.stats.pearsonr`, `scipy.stats.spearmanr`)
+구현된 통계 기능 (27개 메서드):
+
+**기술통계 (5개)**
+1. 기본 통계량: 평균, 중앙값, 표준편차, 왜도, 첨도
+2. 백분위수 및 IQR
+3. 변동계수 (CV)
+4. 표준오차 (SEM)
+5. 신뢰구간 계산
+
+**가정 검정 (6개)**
+1. 정규성: Shapiro-Wilk, Anderson-Darling, D'Agostino-Pearson
+2. 등분산성: Levene, Bartlett, Fligner-Killeen
+3. 이상치: IQR, Z-score, Grubbs test
+4. 자기상관: Durbin-Watson
+
+**가설 검정 (8개)**
+1. T-tests: 일표본, 독립표본, 대응표본
+2. ANOVA: 일원, 이원, 반복측정
+3. 비모수: Mann-Whitney U, Wilcoxon, Kruskal-Wallis, Friedman
+4. 카이제곱: 적합도, 독립성
+
+**상관/회귀 (4개)**
+1. 상관: Pearson, Spearman, Kendall
+2. 편상관 분석
+3. 회귀: 단순, 다중, 로지스틱
+4. 회귀 진단: VIF, 잔차 분석
+
+**사후검정 (4개)**
+1. 모수적: Tukey HSD, Bonferroni, Scheffé
+2. 비모수: Dunn, Nemenyi, Conover
+3. Games-Howell (등분산 가정 위반)
+4. 다중비교 보정: FDR, Bonferroni
 
 #### 🎯 중요 원칙
-- **신뢰성**: 모든 통곈4 곈4산은 SciPy를 통해 수행
+- **신뢰성**: 모든 통계 계산은 SciPy를 통해 수행
 - **검증**: R/SPSS와 0.0001 오차 이내 보장
 - **성능**: Web Worker로 비동기 처리
 - **오류 처리**: 결측값 자동 제거, 최소 데이터 요구사항 검증
 
-### 사용 가능한 SciPy 함수들
+### 사용 가능한 Python 통계 라이브러리들
 ```python
-# T-tests
-stats.ttest_1samp()    # 일표본 t-검정
-stats.ttest_ind()      # 독립표본 t-검정  
-stats.ttest_rel()      # 대응표본 t-검정
+# SciPy (scipy.stats)
+- 기본 통계 검정: t-test, ANOVA, 상관분석
+- 정규성/등분산성 검정
+- 비모수 검정: Mann-Whitney, Wilcoxon, Kruskal-Wallis
 
-# ANOVA
-stats.f_oneway()       # 일원분산분석
-from statsmodels.stats.anova import anova_lm  # 이원분산분석
+# statsmodels
+- 고급 ANOVA: 이원, 반복측정, 혼합 모델
+- 회귀분석: OLS, GLM, 로지스틱
+- 시계열 분석: ARIMA, SARIMA
+- 사후검정: Tukey HSD, 다중비교
 
-# 사후검정
-from statsmodels.stats.multicomp import pairwise_tukeyhsd  # Tukey HSD
-from scikit_posthocs import posthoc_dunn  # Dunn's test
+# pingouin
+- 효과크기: Cohen's d, eta-squared, omega-squared
+- 검정력 분석: 사전/사후 검정력
+- 편상관, 부분상관
+- Bayesian 통계
 
-# 상관분석
-stats.pearsonr()       # Pearson 상관계수
-stats.spearmanr()      # Spearman 순위상관
+# scikit-posthocs
+- 사후검정: Dunn, Nemenyi, Conover, Games-Howell
+- 다중비교 보정: Bonferroni, FDR, Holm
 
-# 회귀분석  
-stats.linregress()     # 단순선형회귀
-from sklearn.linear_model import LinearRegression  # 다중회귀
-
-# 비모수 검정
-stats.mannwhitneyu()   # Mann-Whitney U
-stats.wilcoxon()       # Wilcoxon signed-rank
-stats.kruskal()        # Kruskal-Wallis
-
-# 정규성 검정
-stats.shapiro()        # Shapiro-Wilk
-stats.normaltest()     # D'Agostino-Pearson
-
-# 등분산 검정
-stats.levene()         # Levene's test
-stats.bartlett()       # Bartlett's test
+# scikit-learn
+- 머신러닝 모델
+- 차원축소: PCA, LDA
+- 클러스터링: K-means, 계층적
+- 교차검증 및 모델 평가
 ```
 
 ## 🔧 개발 명령어
@@ -350,5 +375,5 @@ npx shadcn-ui@latest add button input card table dialog
 
 ---
 
-*Last updated: 2025-09-12*  
-*Next milestone: Week 3 - 단일 페이지 통합 분석 인터페이스 구현*
+*Last updated: 2025-09-18*
+*Current focus: Pyodide 통계 엔진 및 워크플로우 통합*

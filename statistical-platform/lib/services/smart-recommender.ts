@@ -24,6 +24,7 @@ interface AnalysisContext {
     missingRatio: number
     outlierRatio: number
     isNormallyDistributed?: boolean
+    isHomoscedastic?: boolean
   }
 }
 
@@ -194,21 +195,28 @@ export class SmartRecommender {
   private static generateRecommendations(
     context: AnalysisContext
   ): { methods: StatisticalMethod[]; matchScore: number } {
-    // 기존 키워드 기반 로직 + 개선
     const methods: StatisticalMethod[] = []
-    const matchScore = 0
+    let matchScore = 0
 
     // ... 키워드 매칭 로직 ...
 
-    // 데이터 기반 보정
-    if (context.dataShape.rows < 30) {
-      // 비모수 검정 우선
-      methods.unshift({
-        id: 'nonparametric',
-        name: '비모수 검정 권장',
-        description: '작은 샘플에 적합',
-        category: 'nonparametric'
-      })
+    // 데이터 기반 보정 및 가정 위반 대체 추천
+    const smallSample = context.dataShape.rows < 30
+    const nonNormal = context.dataQuality.isNormallyDistributed === false
+    const heteroscedastic = context.dataQuality.isHomoscedastic === false
+
+    if (smallSample || nonNormal) {
+      methods.unshift({ id: 'mannwhitney', name: 'Mann-Whitney U', description: '정규성 가정 불필요', category: 'nonparametric' })
+      matchScore += 0.2
+    }
+    if (heteroscedastic) {
+      methods.unshift({ id: 'welchAnova', name: 'Welch ANOVA', description: '등분산 가정 완화', category: 'anova' })
+      methods.unshift({ id: 'gamesHowell', name: 'Games-Howell', description: '사후검정(이분산)', category: 'posthoc' })
+      matchScore += 0.2
+    }
+    if (smallSample) {
+      methods.unshift({ id: 'permutation', name: 'Permutation Test', description: '표본이 작을 때 견고', category: 'resampling' })
+      matchScore += 0.1
     }
 
     return { methods, matchScore }
@@ -223,8 +231,10 @@ export class SmartRecommender {
     compatibilityScore: number,
     matchScore: number
   ): 'high' | 'medium' | 'low' {
-    const totalScore = (clarityScore + compatibilityScore + matchScore) / 3 
-                      - (contradictionCount * 0.2)
+    // 가중 평균 (clarity 0.2, compatibility 0.3, match 0.5)
+    const base = (clarityScore * 0.2) + (compatibilityScore * 0.3) + (matchScore * 0.5)
+    const penalty = Math.min(0.4, contradictionCount * 0.15)
+    const totalScore = Math.max(0, Math.min(1, base - penalty))
 
     if (totalScore > 0.7) return 'high'
     if (totalScore > 0.4) return 'medium'

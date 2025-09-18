@@ -110,6 +110,53 @@ if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
 - **누락값 처리**: null, NaN, 빈 문자열 통일
 - **이상값 플래깅**: 명백한 오류값 표시
 
+### 1.4.1 즉시 데이터 특성 감지 (자동 분석)
+
+업로드 완료 즉시 다음 데이터 특성을 자동으로 파악하여 Step 2에 전달:
+
+#### 데이터 구조 분석
+```javascript
+const dataCharacteristics = {
+  structure: detectDataStructure(data), // wide/long format 감지
+  types: detectColumnTypes(data),       // continuous/ordinal/nominal 분류
+  design: inferStudyDesign(data),       // independent/paired/repeated 추론
+  quality: assessDataQuality(data)      // missing, outliers, anomalies 평가
+};
+```
+
+#### 구조 감지 로직
+- **Wide format**: 변수가 열에, 관측치가 행에 배치
+- **Long format**: 반복 측정이 행으로 쌓인 형태
+- **Mixed format**: 복합 구조 자동 감지
+
+#### 변수 타입 자동 분류
+- **Continuous**: 연속형 (키, 몸무게, 점수 등)
+- **Ordinal**: 순서형 (교육수준, 만족도 등급)
+- **Nominal**: 명목형 (성별, 지역, 그룹 등)
+
+#### 연구 설계 추론
+- **Independent**: 독립 그룹 비교 (남녀 차이)
+- **Paired**: 대응 측정 (전후 비교)
+- **Repeated**: 반복 측정 (시계열, 패널 데이터)
+
+#### 데이터 품질 평가
+- **결측치 패턴**: MCAR/MAR/NMAR 구분
+- **이상치 탐지**: 통계적/도메인 기반
+- **데이터 일관성**: 논리적 오류 검출
+- **분포 특성**: 왜도, 첨도, 다봉성
+
+#### 자동 분석 결과 표시
+```
+🧠 데이터 특성 분석 완료
+
+구조: Wide format (관측치: 1,234개, 변수: 15개)
+타입: 수치형 12개, 범주형 3개
+설계: 독립 그룹 비교 (그룹 변수: Treatment)
+품질: 양호 (결측률 2.3%, 이상치 15개)
+
+→ Step 2에서 상세 검증을 진행합니다
+```
+
 ## 1.5 대용량 파일 처리
 
 ### 처리 전략

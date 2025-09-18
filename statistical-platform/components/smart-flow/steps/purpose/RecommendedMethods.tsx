@@ -58,6 +58,15 @@ export function RecommendedMethods({
                 <div>
                   <span className="font-medium text-sm">{method.name}</span>
                   <span className="text-xs text-muted-foreground ml-2">{method.description}</span>
+                  {['mannwhitney','kruskal-wallis','welchAnova','gamesHowell','permutation'].includes(method.id) && (
+                    <div className="text-[11px] text-blue-600 mt-1">
+                      {method.id === 'mannwhitney' && '정규성 위반 또는 소표본에서 평균 비교 대안'}
+                      {method.id === 'kruskal-wallis' && '정규성 위반 다집단 평균 비교 대안'}
+                      {method.id === 'welchAnova' && '이분산 환경에서 평균 비교(ANOVA) 대안'}
+                      {method.id === 'gamesHowell' && '이분산 사후검정 (등분산 가정 불필요)'}
+                      {method.id === 'permutation' && '표본 수가 작을 때 견고한 검정'}
+                    </div>
+                  )}
                 </div>
                 {selectedMethod?.id === method.id && (
                   <Check className="w-4 h-4 text-primary" />

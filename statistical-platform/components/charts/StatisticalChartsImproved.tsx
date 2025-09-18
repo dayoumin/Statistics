@@ -55,8 +55,8 @@ export const HistogramChart = memo(function HistogramChart({
 
   const layout = useMemo(() => getDefaultLayout({
     title: { text: title },
-    xaxis: { title: xLabel },
-    yaxis: { title: '빈도' },
+    xaxis: { title: { text: xLabel } },
+    yaxis: { title: { text: '빈도' } },
     showlegend: false,
     height: 300,
     bargap: 0.05
@@ -198,8 +198,8 @@ export const BarChart = memo(function BarChart({
 
   const layout = useMemo(() => getDefaultLayout({
     title: { text: title },
-    xaxis: orientation === 'v' ? { title: '카테고리' } : { title: '값' },
-    yaxis: orientation === 'v' ? { title: '빈도' } : { title: '카테고리' },
+    xaxis: orientation === 'v' ? { title: { text: '카테고리' } } : { title: { text: '값' } },
+    yaxis: orientation === 'v' ? { title: { text: '빈도' } } : { title: { text: '카테고리' } },
     showlegend: false,
     height: 300
   }), [title, orientation])
@@ -285,8 +285,8 @@ export const ScatterPlot = memo(function ScatterPlot({
 
   const layout = useMemo(() => getDefaultLayout({
     title: { text: title },
-    xaxis: { title: xLabel },
-    yaxis: { title: yLabel },
+    xaxis: { title: { text: xLabel } },
+    yaxis: { title: { text: yLabel } },
     showlegend: showTrendline,
     height: 400
   }), [title, xLabel, yLabel, showTrendline])

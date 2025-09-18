@@ -341,7 +341,8 @@ json.dumps(output)
   async performAllAssumptionTests(
     data1: number[],
     data2: number[],
-    testType: 'ttest' | 'anova' | 'regression' | 'correlation' = 'ttest'
+    testType: 'ttest' | 'anova' | 'regression' | 'correlation' = 'ttest',
+    options: { alpha?: number; normalityRule?: 'any' | 'majority' | 'strict' } = {}
   ): Promise<{
     normality?: { group1: any, group2: any }
     homogeneity?: any
@@ -354,6 +355,9 @@ json.dumps(output)
     await this.initialize()
     const pyodide = getPyodideInstance() as any
 
+    const alpha = options.alpha ?? 0.05
+    const normality_rule = options.normalityRule ?? 'any'
+
     const pythonCode = `
 import numpy as np
 from scipy import stats
@@ -364,10 +368,12 @@ warnings.filterwarnings('ignore')
 data1 = np.array(${JSON.stringify(data1)})
 data2 = np.array(${JSON.stringify(data2)})
 test_type = "${testType}"
+alpha = ${alpha}
+normality_rule = "${normality_rule}"
 
 results = {}
 
-# 1. 정규성 검정 (Shapiro-Wilk + Kolmogorov-Smirnov)
+# 1. 정규성 검정 (Shapiro-Wilk + Kolmogorov-Smirnov + D’Agostino)
 def check_normality(data, group_name):
     n = len(data)
     
@@ -390,7 +396,18 @@ def check_normality(data, group_name):
     else:
         k2_stat, k2_p = None, None
     
-    is_normal = sw_p > 0.05
+    # 정상성 판단 규칙
+    pvals = [p for p in [sw_p, (ks_p if 'ks_p' in locals() else None), k2_p] if p is not None]
+    passes = sum(1 for p in pvals if p > alpha)
+    total = len(pvals)
+    if total == 0:
+        is_normal = False
+    elif normality_rule == 'strict':
+        is_normal = (passes == total)
+    elif normality_rule == 'majority':
+        is_normal = (passes >= max(1, int(round(total/2.0))))
+    else:  # 'any'
+        is_normal = (passes >= 1)
     
     return {
         "method": method,
@@ -399,9 +416,11 @@ def check_normality(data, group_name):
         "isNormal": is_normal,
         "andersonStat": float(ad_result.statistic),
         "dagostinoPValue": float(k2_p) if k2_p else None,
+        "ksPValue": float(ks_p) if 'ks_p' in locals() else None,
         "skewness": float(stats.skew(data)),
         "kurtosis": float(stats.kurtosis(data)),
-        "interpretation": f"정규분포 {'만족' if is_normal else '위반'} ({method} p={sw_p:.4f})"
+        "interpretation": f"정규분포 {'만족' if is_normal else '위반'} (rule={normality_rule}, alpha={alpha})",
+        "notes": "KS는 모수 추정으로 Lilliefors 상황: 참고용"
     }
 
 results["normality"] = {
@@ -409,7 +428,7 @@ results["normality"] = {
     "group2": check_normality(data2, "Group 2")
 }
 
-# 2. 등분산성 검정 (Levene + Bartlett + F-test)
+# 2. 등분산성 검정 (Levene 중심, Bartlett 보조, F-test 참고)
 if test_type in ["ttest", "anova"]:
     # Levene's test (robust)
     lev_stat, lev_p = stats.levene(data1, data2, center='median')
@@ -428,10 +447,10 @@ if test_type in ["ttest", "anova"]:
     results["homogeneity"] = {
         "levene": {"statistic": float(lev_stat), "pValue": float(lev_p)},
         "bartlett": {"statistic": float(bart_stat), "pValue": float(bart_p)},
-        "fTest": {"statistic": float(f_stat), "pValue": float(f_p)},
+        "fTest": {"statistic": float(f_stat), "pValue": float(f_p), "caution": "정규성 민감, 참고용"},
         "isHomogeneous": is_homogeneous,
         "varianceRatio": float(var1/var2),
-        "interpretation": f"등분산성 {'만족' if is_homogeneous else '위반'} (Levene p={lev_p:.4f})"
+        "interpretation": f"등분산성 {'만족' if is_homogeneous else '위반'} (Levene 기준). Bartlett는 정규성 만족 시 보조지표로 참고"
     }
 
 # 3. 독립성 검정 (Durbin-Watson for residuals)
@@ -476,8 +495,8 @@ if test_type in ["regression", "correlation"]:
         "interpretation": f"선형 관계 {'있음' if is_linear else '약함'} (R²={r_squared:.3f})"
     }
 
-# 5. 이상치 검정 (IQR method + Z-score)
-def detect_outliers(data):
+# 5. 이상치 검정 (IQR method + Z-score + Grubbs[정규성 만족 시])
+def detect_outliers(data, use_grubbs=False):
     q1, q3 = np.percentile(data, [25, 75])
     iqr = q3 - q1
     lower_bound = q1 - 1.5 * iqr
@@ -491,7 +510,7 @@ def detect_outliers(data):
     outliers_zscore = np.where(z_scores > 3)[0]
     
     # Grubbs test for single outlier
-    if len(data) > 2:
+    if use_grubbs and len(data) > 2:
         z_max = max(np.abs(data - np.mean(data))) / np.std(data)
         n = len(data)
         t_dist = stats.t.ppf(1 - 0.05/(2*n), n-2)
@@ -508,10 +527,19 @@ def detect_outliers(data):
         "hasOutliers": len(outliers_iqr) > 0
     }
 
+# 정상성 결과 확인 후 Grubbs 사용 여부 결정
+g1_norm = False
+g2_norm = False
+try:
+    g1_norm = bool(results.get("normality",{}).get("group1",{}).get("isNormal", False))
+    g2_norm = bool(results.get("normality",{}).get("group2",{}).get("isNormal", False))
+except Exception:
+    pass
+
 results["outliers"] = {
-    "group1": detect_outliers(data1),
-    "group2": detect_outliers(data2),
-    "interpretation": "이상치 탐지 완료"
+    "group1": detect_outliers(data1, use_grubbs=(g1_norm and g2_norm)),
+    "group2": detect_outliers(data2, use_grubbs=(g1_norm and g2_norm)),
+    "interpretation": "이상치 탐지 완료 (Grubbs는 정규성 만족 시에만 수행)"
 }
 
 # 6. 표본 크기 적절성 

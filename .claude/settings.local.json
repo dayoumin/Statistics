@@ -20,7 +20,8 @@
       "Bash(dir:*)",
       "Bash(npm run lint)",
       "Bash(git push:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [],
     "ask": []

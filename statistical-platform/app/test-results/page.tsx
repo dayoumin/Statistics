@@ -46,7 +46,7 @@ export default function TestResultsPage() {
     if (!pyodideReady) return
 
     setIsRunning(true)
-    const results: TestResult[] = []
+    const _results: TestResult[] = []
 
     // 테스트 목록
     const tests = [

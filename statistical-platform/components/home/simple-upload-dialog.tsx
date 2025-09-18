@@ -105,6 +105,7 @@ export function SimpleUploadDialog({ open, onOpenChange }: SimpleUploadDialogPro
                   variant="ghost"
                   size="sm"
                   onClick={() => setUploadState(prev => ({ ...prev, error: "" }))}
+                  aria-label="오류 메시지 닫기"
                 >
                   <X className="h-4 w-4" />
                 </Button>

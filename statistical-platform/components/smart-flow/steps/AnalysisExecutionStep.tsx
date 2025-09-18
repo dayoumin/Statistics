@@ -97,8 +97,9 @@ export function AnalysisExecutionStep({
 
       // Stage 1: 환경 준비
       updateStage('prepare', 5)
+      addLog('통계 엔진을 불러오는 중... (3-5초 소요)')
       await pyodideStats.initialize()
-      addLog('Pyodide 환경 준비 완료')
+      addLog('통계 엔진 준비 완료')
 
       if (isCancelled) return
 

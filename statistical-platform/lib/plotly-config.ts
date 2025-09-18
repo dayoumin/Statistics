@@ -1,4 +1,5 @@
 import type { Layout, Config, Font } from 'plotly.js'
+import { getResponsiveChartLayout } from '@/lib/hooks/useResponsive'
 
 /**
  * Plotly 중앙화 설정
@@ -96,24 +97,27 @@ export const getDefaultLayout = (customLayout?: Partial<Layout>): Partial<Layout
   }
 }
 
-// 히트맵 전용 레이아웃
-export const getHeatmapLayout = (customLayout?: Partial<Layout>): Partial<Layout> => {
+// 히트맵 전용 레이아웃 (반응형 지원)
+export const getHeatmapLayout = (customLayout?: Partial<Layout>, isMobile = false, isTablet = false): Partial<Layout> => {
+  const responsiveLayout = getResponsiveChartLayout(isMobile, isTablet)
   return getDefaultLayout({
+    ...responsiveLayout,
     margin: {
-      ...DEFAULT_MARGINS,
-      l: 90, // 히트맵은 더 많은 왼쪽 공간 필요
-      b: 80
+      ...responsiveLayout.margin,
+      l: isMobile ? 50 : 90, // 모바일에서는 왼쪽 마진 축소
+      b: isMobile ? 60 : 80
     },
     ...customLayout
   })
 }
 
-// 모달/다이얼로그용 레이아웃 (더 큰 사이즈)
-export const getModalLayout = (customLayout?: Partial<Layout>): Partial<Layout> => {
+// 모달/다이얼로그용 레이아웃 (반응형 지원)
+export const getModalLayout = (customLayout?: Partial<Layout>, isMobile = false, isTablet = false): Partial<Layout> => {
+  const responsiveLayout = getResponsiveChartLayout(isMobile, isTablet)
   return getDefaultLayout({
-    height: 500, // 고정 높이
+    height: isMobile ? 300 : isTablet ? 400 : 500,
     width: undefined, // 자동 너비
-    margin: DEFAULT_MARGINS,
+    margin: responsiveLayout.margin || DEFAULT_MARGINS,
     ...customLayout
   })
 }

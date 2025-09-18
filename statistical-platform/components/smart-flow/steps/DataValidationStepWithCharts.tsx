@@ -163,7 +163,7 @@ export const DataValidationStepWithCharts = memo(function DataValidationStepWith
     }
 
     calculateMatrix()
-  }, [numericColumns, data, calculateCorrelation])
+  }, [numericColumns.length, data?.length]) // 배열 자체가 아닌 길이만 의존성으로
 
   const getColumnData = (columnName: string) => {
     if (!data) return []

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useState } from "react"
+import React, { useCallback, useState, useRef } from "react"
 import { Upload, FileText, AlertCircle, CheckCircle2, X, BarChart3, Eye, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -42,6 +42,7 @@ export function FileUpload({ onUploadComplete, className, enableSmartAnalysis = 
     isUploading: false,
     progress: 0
   })
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   const handleFileValidation = useCallback((file: File) => {
     const validation = validateFile(file)
@@ -217,7 +218,7 @@ export function FileUpload({ onUploadComplete, className, enableSmartAnalysis = 
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between">
                 {uploadState.error}
-                <Button variant="ghost" size="sm" onClick={clearError}>
+                <Button variant="ghost" size="sm" onClick={clearError} aria-label="오류 메시지 닫기">
                   <X className="h-4 w-4" />
                 </Button>
               </AlertDescription>
@@ -386,14 +387,16 @@ export function FileUpload({ onUploadComplete, className, enableSmartAnalysis = 
                 </div>
                 
                 <div>
-                  <label htmlFor="file-upload">
-                    <Button variant="outline" className="cursor-pointer" asChild>
-                      <span>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Browse Files
-                      </span>
-                    </Button>
-                  </label>
+                  <Button
+                    variant="outline"
+                    className="cursor-pointer"
+                    onClick={() => inputRef.current?.click()}
+                    disabled={uploadState.isUploading}
+                    aria-label="Browse files"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Browse Files
+                  </Button>
                   <input
                     id="file-upload"
                     type="file"
@@ -401,6 +404,7 @@ export function FileUpload({ onUploadComplete, className, enableSmartAnalysis = 
                     accept=".csv,.tsv,.txt,.xls,.xlsx"
                     onChange={handleFileSelect}
                     disabled={uploadState.isUploading}
+                    ref={inputRef}
                   />
                 </div>
               </div>

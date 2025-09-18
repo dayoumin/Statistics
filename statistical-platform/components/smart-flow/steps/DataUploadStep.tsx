@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { Upload, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { getUserFriendlyErrorMessage } from '@/lib/constants/error-messages'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useDropzone } from 'react-dropzone'
@@ -72,7 +73,7 @@ export function DataUploadStep({
         // 보안 검증 수행
         const securityCheck = await DataValidationService.validateFileContent(file)
         if (!securityCheck.isValid) {
-          const errorMsg = securityCheck.error || '파일 보안 검증에 실패했습니다.'
+          const errorMsg = getUserFriendlyErrorMessage(securityCheck.error || 'File security validation failed')
           setError(errorMsg)
           toast.error('파일 검증 실패', {
             description: errorMsg
@@ -129,7 +130,8 @@ export function DataUploadStep({
             complete: (result) => {
               if (result.errors.length > 0) {
                 const errorMessages = result.errors.map(e => e.message).join(', ')
-                setError(`CSV 파싱 오류: ${errorMessages}`)
+                const friendlyError = getUserFriendlyErrorMessage(`CSV parsing error: ${errorMessages}`)
+                setError(friendlyError)
                 setIsUploading(false)
                 return
               }
@@ -162,7 +164,7 @@ export function DataUploadStep({
             dynamicTyping: true,
             skipEmptyLines: true,
             error: (error) => {
-              setError(`파일 읽기 오류: ${error.message}`)
+              setError(getUserFriendlyErrorMessage(error))
               setIsUploading(false)
             }
           })
@@ -408,23 +410,6 @@ export function DataUploadStep({
         </ul>
       </div>
       </CardContent>
-      <CardFooter className="justify-between">
-        <div className="flex-1">
-          {uploadedFileName && (
-            <span className="text-sm text-muted-foreground">
-              파일: {uploadedFileName}
-            </span>
-          )}
-        </div>
-        <Button
-          variant="default"
-          disabled={!uploadedFileName || isUploading || !canGoNext}
-          onClick={onNext}
-        >
-          다음 단계
-          <ChevronRight className="w-4 h-4 ml-2" />
-        </Button>
-      </CardFooter>
     </Card>
   )
 }

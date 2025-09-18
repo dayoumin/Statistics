@@ -53,14 +53,12 @@ export default function SmartFlowPageRefactored() {
   const {
     currentStep,
     completedSteps,
-    _uploadedFile,
     uploadedData,
     validationResults,
     selectedMethod,
     analysisResults,
     isLoading,
     error,
-    _setCurrentStep,
     setUploadedFile,
     setUploadedData,
     setValidationResults,
@@ -71,7 +69,6 @@ export default function SmartFlowPageRefactored() {
     canProceedToNext,
     goToNextStep,
     goToPreviousStep,
-    _addCompletedStep,
     reset,
     navigateToStep,
     canNavigateToStep
@@ -306,8 +303,13 @@ export default function SmartFlowPageRefactored() {
             {currentStep === 4 && (
               <div className="animate-in fade-in duration-500">
                 <AnalysisExecutionStep
-                  method={selectedMethod?.name || null}
+                  selectedMethod={selectedMethod}
+                  variableMapping={{}}
                   onAnalysisComplete={handleAnalysisComplete}
+                  onNext={goToNextStep}
+                  onPrevious={goToPreviousStep}
+                  canGoNext={canProceedToNext()}
+                  canGoPrevious={currentStep > 1}
                 />
               </div>
             )}

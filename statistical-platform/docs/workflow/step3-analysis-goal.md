@@ -33,9 +33,106 @@
 - **클라우드**: 웹 서비스 + OpenAI/Claude API
 - **하이브리드**: 선택적 AI 활성화
 
-## 3.2 인터페이스 구성 (AI 없는 버전)
+## 3.2 인터페이스 구성 (스마트 가이드 버전)
 
-### 3.2.1 2단계 선택 방식
+### 3.2.1 데이터 기반 자동 추천
+
+Step 2의 검증 결과를 활용하여 분석 목적을 자동으로 추천:
+
+```javascript
+const generateSmartRecommendations = () => {
+  const { assumptions, recommendations } = store.getValidationResults();
+
+  return {
+    '차이 검정': {
+      available: assumptions.normality ? ['t-test', 'ANOVA'] : ['Mann-Whitney', 'Kruskal-Wallis'],
+      recommended: recommendations.difference,
+      reason: assumptions.violations
+    },
+    '관계 분석': {
+      available: assumptions.linearity ? ['Pearson'] : ['Spearman'],
+      recommended: recommendations.correlation,
+      reason: assumptions.warnings
+    },
+    '예측 모델': {
+      available: checkRegressionAssumptions(),
+      recommended: recommendations.prediction,
+      requirements: ['선형성', 'VIF < 10']
+    }
+  };
+};
+```
+
+#### 추천 표시 형식
+```
+🎯 추천 분석 목적 (데이터 특성 기반)
+
+1. 차이 검정 (그룹 비교)
+   ✅ 사용 가능: 독립표본 t-test, Welch's t-test
+   📊 추천: Welch's t-test (등분산성 위반)
+   ⚠️ 이유: Income 변수 정규성 위반
+
+2. 관계 분석 (변수 간 연관성)
+   ✅ 사용 가능: Pearson, Spearman 상관분석
+   📊 추천: Spearman (순위 상관)
+   ⚠️ 이유: 데이터 비선형성
+
+3. 예측 모델 (미래 값 예측)
+   ⚠️ 조건부 가능: 선형회귀 (전처리 필요)
+   📋 요구사항: 이상치 제거, 변수 변환
+```
+
+### 3.2.2 사용자 선택 시 스마트 검증
+
+분석 목적 선택 시 필요한 가정을 자동으로 재검증:
+
+```javascript
+const onSelectPurpose = async (purpose) => {
+  const requiredAssumptions = getRequiredAssumptions(purpose);
+  const missingTests = findMissingTests(requiredAssumptions);
+
+  if (missingTests.length > 0) {
+    // 필요한 추가 검정 자동 실행
+    await runAdditionalTests(missingTests);
+  }
+
+  // 최종 확인 및 경고
+  return validateSelection(purpose, assumptions);
+};
+```
+
+#### 추가 검정 실행 예시
+```
+🔍 추가 검정 실행 중...
+
+선택: 차이 검정 (t-test)
+필요한 가정: 정규성, 등분산성
+
+실행 중:
+• Shapiro-Wilk 정규성 검정 (Score 변수)
+• Levene 등분산성 검정 (Gender 그룹)
+
+결과:
+✅ 정규성: 만족 (p=0.156)
+✅ 등분산성: 만족 (p=0.734)
+
+→ 독립표본 t-test로 진행 가능
+```
+
+#### 검증 실패 시 대안 제시
+```
+⚠️ 가정 위반 감지
+
+문제: Income 변수 정규성 위반 (p<0.001)
+해결: 비모수 검정으로 자동 전환
+
+대안 옵션:
+1. Mann-Whitney U test (비모수 t-test)
+2. 데이터 변환 후 재시도 (로그 변환)
+3. Welch's t-test (등분산성 불필요)
+
+[자동 적용] [수동 선택] [취소]
+```
 
 #### Level 1: 질문 유형 선택
 ```

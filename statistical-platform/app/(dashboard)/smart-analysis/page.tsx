@@ -35,8 +35,8 @@ export default function SmartAnalysisPage() {
   const [currentStep, setCurrentStep] = useState<Step>('upload')
   const [datasetInfo, setDatasetInfo] = useState<DatasetInfo | null>(null)
   const [assumptionResults, setAssumptionResults] = useState<AssumptionResults | null>(null)
-  const [_progress, _setProgress] = useState(0)
-  const [_isAnalyzing, _setIsAnalyzing] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [_selectedAnalysisType, setSelectedAnalysisType] = useState<string | null>(null)
   const [analysisResultId, setAnalysisResultId] = useState<string | null>(null)
   
@@ -375,7 +375,7 @@ export default function SmartAnalysisPage() {
               </p>
               <Button onClick={() => {
                 setCurrentStep('analysis')
-                _setIsAnalyzing(true)
+                setIsAnalyzing(true)
                 // 3초 후 자동으로 결과 단계로 이동하고 분석 결과 저장
                 setTimeout(() => {
                   // 분석 결과를 store에 저장

@@ -1,10 +1,12 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { 
-  ValidationResults, 
-  StatisticalMethod, 
-  AnalysisResult 
+import {
+  ValidationResults,
+  StatisticalMethod,
+  AnalysisResult,
+  DataRow
 } from '@/types/smart-flow'
+import { DataCharacteristics } from '@/lib/statistics/data-type-detector'
 
 // 분석 히스토리 타입
 export interface AnalysisHistory {
@@ -16,9 +18,8 @@ export interface AnalysisHistory {
   dataFileName: string
   dataRowCount: number
   results: AnalysisResult | null
-  assumptions?: any
   stepData: {
-    uploadedData: any[] | null
+    uploadedData: DataRow[] | null
     validationResults: ValidationResults | null
     analysisPurpose: string
     selectedMethod: StatisticalMethod | null
@@ -26,29 +27,55 @@ export interface AnalysisHistory {
   }
 }
 
+// 통계적 가정 검정 결과
+export interface StatisticalAssumptions {
+  normality?: {
+    shapiroWilk?: { statistic: number; pValue: number; isNormal: boolean }
+    kolmogorovSmirnov?: { statistic: number; pValue: number; isNormal: boolean }
+  }
+  homogeneity?: {
+    levene?: { statistic: number; pValue: number; equalVariance: boolean }
+    bartlett?: { statistic: number; pValue: number; equalVariance: boolean }
+  }
+  independence?: {
+    durbinWatson?: { statistic: number; interpretation: string; isIndependent: boolean }
+  }
+  summary?: {
+    canUseParametric: boolean
+    reasons: string[]
+    recommendations: string[]
+  }
+}
+
 interface SmartFlowState {
   // 현재 단계
   currentStep: number
   completedSteps: number[]
-  
+
   // 데이터
   uploadedFile: File | null
-  uploadedData: any[] | null
-  
+  uploadedData: DataRow[] | null
+
+  // 데이터 특성 (새로 추가)
+  dataCharacteristics: DataCharacteristics | null
+
   // 검증
   validationResults: ValidationResults | null
-  
+
+  // 통계적 가정 검정 결과 (새로 추가)
+  assumptionResults: StatisticalAssumptions | null
+
   // 분석 설정
   analysisPurpose: string
   selectedMethod: StatisticalMethod | null
-  
+
   // 분석 결과
   analysisResults: AnalysisResult | null
-  
+
   // 히스토리
   analysisHistory: AnalysisHistory[]
   currentHistoryId: string | null
-  
+
   // 상태
   isLoading: boolean
   error: string | null
@@ -57,8 +84,10 @@ interface SmartFlowState {
   setCurrentStep: (step: number) => void
   addCompletedStep: (step: number) => void
   setUploadedFile: (file: File | null) => void
-  setUploadedData: (data: any[] | null) => void
+  setUploadedData: (data: DataRow[] | null) => void
+  setDataCharacteristics: (characteristics: DataCharacteristics | null) => void
   setValidationResults: (results: ValidationResults | null) => void
+  setAssumptionResults: (results: StatisticalAssumptions | null) => void
   setAnalysisPurpose: (purpose: string) => void
   setSelectedMethod: (method: StatisticalMethod | null) => void
   setAnalysisResults: (results: AnalysisResult | null) => void
@@ -88,7 +117,9 @@ const initialState = {
   completedSteps: [],
   uploadedFile: null,
   uploadedData: null,
+  dataCharacteristics: null,
   validationResults: null,
+  assumptionResults: null,
   analysisPurpose: '',
   selectedMethod: null,
   analysisResults: null,
@@ -112,7 +143,9 @@ export const useSmartFlowStore = create<SmartFlowState>()(
       
       setUploadedFile: (file) => set({ uploadedFile: file }),
       setUploadedData: (data) => set({ uploadedData: data }),
+      setDataCharacteristics: (characteristics) => set({ dataCharacteristics: characteristics }),
       setValidationResults: (results) => set({ validationResults: results }),
+      setAssumptionResults: (results) => set({ assumptionResults: results }),
       setAnalysisPurpose: (purpose) => set({ analysisPurpose: purpose }),
       setSelectedMethod: (method) => set({ selectedMethod: method }),
       setAnalysisResults: (results) => set({ analysisResults: results }),
@@ -133,7 +166,6 @@ export const useSmartFlowStore = create<SmartFlowState>()(
           dataFileName: state.uploadedFile?.name || 'unknown',
           dataRowCount: state.uploadedData?.length || 0,
           results: state.analysisResults,
-          assumptions: (state.analysisResults as any)?.assumptions,
           stepData: {
             uploadedData: state.uploadedData,
             validationResults: state.validationResults,

@@ -55,14 +55,12 @@ export default function SmartFlowPageRefactored() {
   const {
     currentStep,
     completedSteps,
-    _uploadedFile,
     uploadedData,
     validationResults,
     selectedMethod,
     analysisResults,
     isLoading,
     error,
-    _setCurrentStep,
     setUploadedFile,
     setUploadedData,
     setValidationResults,
@@ -73,7 +71,6 @@ export default function SmartFlowPageRefactored() {
     canProceedToNext,
     goToNextStep,
     goToPreviousStep,
-    _addCompletedStep,
     reset,
     navigateToStep,
     canNavigateToStep
@@ -114,9 +111,9 @@ export default function SmartFlowPageRefactored() {
     goToNextStep()
   }, [setAnalysisResults, goToNextStep])
 
-  // 데이터 검증 수행
+  // 데이터 검증 수행 (상세 검증 - 이상치, 데이터 타입 포함)
   const performDataValidation = (data: DataRow[]): ValidationResults => {
-    return DataValidationService.performValidation(data)
+    return DataValidationService.performDetailedValidation(data)
   }
   
   // 데이터 정보 추출 (PurposeInputStep에 전달용)
@@ -141,6 +138,7 @@ export default function SmartFlowPageRefactored() {
               variant="outline"
               size="sm"
               onClick={() => setShowHistory(!showHistory)}
+              aria-label="분석 히스토리 패널 열기"
             >
               <Clock className="w-4 h-4 mr-2" />
               분석 히스토리
@@ -149,6 +147,7 @@ export default function SmartFlowPageRefactored() {
               variant="outline"
               size="sm"
               onClick={() => setShowHelp(!showHelp)}
+              aria-label="데이터 제한 안내 패널 열기"
             >
               <HelpCircle className="w-4 h-4 mr-2" />
               데이터 제한 안내
@@ -166,6 +165,7 @@ export default function SmartFlowPageRefactored() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowHelp(false)}
+                  aria-label="도움말 패널 닫기"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -226,6 +226,7 @@ export default function SmartFlowPageRefactored() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowHistory(false)}
+                  aria-label="히스토리 패널 닫기"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -338,8 +339,13 @@ export default function SmartFlowPageRefactored() {
                 <div className="animate-in fade-in duration-500">
                   <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded" />}>
                     <AnalysisExecutionStep
-                      method={selectedMethod?.name || null}
+                      selectedMethod={selectedMethod}
+                      variableMapping={{}}
                       onAnalysisComplete={handleAnalysisComplete}
+                      onNext={goToNextStep}
+                      onPrevious={goToPreviousStep}
+                      canGoNext={canProceedToNext()}
+                      canGoPrevious={currentStep > 1}
                     />
                   </Suspense>
                 </div>
@@ -359,10 +365,11 @@ export default function SmartFlowPageRefactored() {
         {/* 네비게이션 버튼 */}
         <div className="flex justify-between">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={goToPreviousStep}
               disabled={currentStep === 1 || isLoading}
+              aria-label="이전 분석 단계로 이동"
             >
               <ChevronLeft className="w-4 h-4 mr-2" />
               이전 단계
@@ -379,14 +386,16 @@ export default function SmartFlowPageRefactored() {
               }}
               disabled={isLoading}
               className="text-muted-foreground hover:text-destructive"
+              aria-label="모든 데이터 초기화 및 처음부터 다시 시작"
             >
               처음부터 다시
             </Button>
           </div>
           
-          <Button 
+          <Button
             onClick={goToNextStep}
             disabled={currentStep === 5 || !canProceedToNext() || isLoading}
+            aria-label="다음 분석 단계로 이동"
           >
             다음 단계
             <ChevronRight className="w-4 h-4 ml-2" />

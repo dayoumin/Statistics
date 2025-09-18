@@ -18,7 +18,7 @@ export default function TestPyodidePage() {
 
   useEffect(() => {
     testPyodide()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const testPyodide = async () => {
     try {
@@ -28,7 +28,7 @@ export default function TestPyodidePage() {
       // 1단계: 스크립트 로드
       addLog('1단계: Pyodide 스크립트 로드 시도...')
 
-      if (!(window as any).loadPyodide) {
+      if (!((window as unknown as { loadPyodide?: unknown }).loadPyodide)) {
         const script = document.createElement('script')
         script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js'
 
@@ -49,7 +49,7 @@ export default function TestPyodidePage() {
       addLog('2단계: Pyodide 초기화 중...')
       setStatus('Pyodide 초기화 중...')
 
-      const pyodide = await (window as any).loadPyodide({
+      const pyodide = await ((window as unknown as { loadPyodide: (config: unknown) => Promise<unknown> }).loadPyodide)({
         indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
       })
       addLog('✓ Pyodide 초기화 성공')
