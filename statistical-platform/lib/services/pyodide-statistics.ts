@@ -187,16 +187,16 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    const result = JSON.parse(resultStr)
+    const parsed = JSON.parse(resultStr)
 
-    if (result.error) {
-      throw new Error(result.error)
+    if (parsed.error) {
+      throw new Error(parsed.error)
     }
 
     return {
-      statistic: result.statistic,
-      pValue: result.pvalue,
-      isNormal: result.pvalue > 0.05 // 유의수준 0.05 기준
+      statistic: parsed.statistic,
+      pValue: parsed.pvalue,
+      isNormal: parsed.pvalue > 0.05 // 유의수준 0.05 기준
     }
   }
 
@@ -268,20 +268,20 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    const result = JSON.parse(resultStr)
+    const parsed = JSON.parse(resultStr)
 
-    if (result.error) {
-      throw new Error(result.error)
+    if (parsed.error) {
+      throw new Error(parsed.error)
     }
 
     return {
-      q1: result.q1,
-      q3: result.q3,
-      iqr: result.iqr,
-      lowerBound: result.lower_bound,
-      upperBound: result.upper_bound,
-      mildOutliers: result.mild_outliers,
-      extremeOutliers: result.extreme_outliers
+      q1: parsed.q1,
+      q3: parsed.q3,
+      iqr: parsed.iqr,
+      lowerBound: parsed.lower_bound,
+      upperBound: parsed.upper_bound,
+      mildOutliers: parsed.mild_outliers,
+      extremeOutliers: parsed.extreme_outliers
     }
   }
 
@@ -322,16 +322,16 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    const result = JSON.parse(resultStr)
+    const parsed = JSON.parse(resultStr)
 
-    if (result.error) {
-      throw new Error(result.error)
+    if (parsed.error) {
+      throw new Error(parsed.error)
     }
 
     return {
-      statistic: result.statistic,
-      pValue: result.pvalue,
-      equalVariance: result.pvalue > 0.05
+      statistic: parsed.statistic,
+      pValue: parsed.pvalue,
+      equalVariance: parsed.pvalue > 0.05
     }
   }
 
@@ -351,7 +351,7 @@ export class PyodideStatisticsService {
 
     this.pyodide.globals.set('residuals', residuals)
 
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       import numpy as np
 
       # 결측값 제거
@@ -386,7 +386,7 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    const parsedResult = this.parsePythonResult<any>(result)
+    const parsedResult = this.parsePythonResult<any>(resultStr)
 
     if (parsedResult.error) {
       throw new Error(parsedResult.error)
@@ -413,7 +413,7 @@ export class PyodideStatisticsService {
 
     this.pyodide.globals.set('groups_data', groups)
 
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       from scipy import stats
       import numpy as np
 
@@ -440,7 +440,7 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    const parsedResult = this.parsePythonResult<any>(result)
+    const parsedResult = this.parsePythonResult<any>(resultStr)
 
     if (parsedResult.error) {
       throw new Error(parsedResult.error)
@@ -467,7 +467,7 @@ export class PyodideStatisticsService {
 
     this.pyodide.globals.set('data_array', data)
 
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       from scipy import stats
       import numpy as np
 
@@ -491,7 +491,7 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    const parsedResult = this.parsePythonResult<any>(result)
+    const parsedResult = this.parsePythonResult<any>(resultStr)
 
     if (parsedResult.error) {
       throw new Error(parsedResult.error)
@@ -645,7 +645,7 @@ export class PyodideStatisticsService {
     this.pyodide.globals.set('data_array', data)
 
     console.log('[descriptiveStats] Python 코드 실행 중...')
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       # 결측값 제거
       clean_data = np.array([x for x in data_array if x is not None and not np.isnan(x)])
 
@@ -788,7 +788,7 @@ export class PyodideStatisticsService {
     this.pyodide.globals.set('mu', options.mu ?? 0)
     this.pyodide.globals.set('alternative', options.alternative ?? 'two-sided')
 
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       import numpy as np
       from scipy import stats
 
@@ -904,7 +904,7 @@ export class PyodideStatisticsService {
 
     this.pyodide.globals.set('groups_data', groups)
 
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       import numpy as np
       from scipy import stats
 
@@ -1044,7 +1044,7 @@ export class PyodideStatisticsService {
     this.pyodide.globals.set('group1', group1)
     this.pyodide.globals.set('group2', group2)
 
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       from scipy import stats
       import numpy as np
 
@@ -1125,7 +1125,7 @@ export class PyodideStatisticsService {
 
     this.pyodide.globals.set('groups_data', groups)
 
-    const result = await this.pyodide.runPythonAsync(`
+    const resultStr = await this.pyodide.runPythonAsync(`
       from scipy import stats
       import numpy as np
 
@@ -1153,7 +1153,7 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    return result
+    return this.parsePythonResult(resultStr)
   }
 
   /**
@@ -1198,7 +1198,7 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    return result
+    return this.parsePythonResult(resultStr)
   }
 
   /**
@@ -1236,7 +1236,7 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    return result
+    return this.parsePythonResult(resultStr)
   }
 
   /**
@@ -1885,13 +1885,13 @@ export class PyodideStatisticsService {
       result_json
     `)
 
-    const result = JSON.parse(resultStr)
+    const parsed = JSON.parse(resultStr)
 
-    if (result.error) {
-      throw new Error(result.error)
+    if (parsed.error) {
+      throw new Error(parsed.error)
     }
 
-    return result
+    return parsed
   }
 
   /**
