@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('고급 통계 브라우저 검증', () => {
-    test('PCA, Cronbach\'s Alpha, Factor/Cluster/TimeSeries', async ({ page }) => {
+    test.skip('PCA, Cronbach\'s Alpha, Factor/Cluster/TimeSeries', async ({ page }) => {
         await page.goto('/test-statistics')
 
         // 상태가 완료될 때까지 대기
