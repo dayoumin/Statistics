@@ -45,8 +45,8 @@ export function PurposeInputStep({
   const [variableMapping, setVariableMapping] = useState<VariableMapping | null>(null)
   const [showVariableMapping, setShowVariableMapping] = useState(false)
 
-  // 스토어에서 가정 결과와 데이터 특성 사용
-  const { assumptionResults, dataCharacteristics } = useSmartFlowStore()
+  // 스토어에서 가정 결과와 데이터 특성, 선택 메서드 setter 사용
+  const { assumptionResults, dataCharacteristics, setSelectedMethod: setSelectedMethodInStore, setVariableMapping: setVariableMappingInStore } = useSmartFlowStore()
 
   // 데이터 프로파일 생성
   const dataProfile = useMemo(() => {
@@ -159,6 +159,16 @@ export function PurposeInputStep({
     return () => clearTimeout(timer)
   }, [purpose, validationResults, data, assumptionResults])
 
+  // UX 개선: 3단계 진입 시 기본 탭 자동 선택(차이/비교) 및 추천 패널 자동 펼침
+  useEffect(() => {
+    if (!selectedQuestionType) {
+      setSelectedQuestionType('comparison')
+    }
+    if (mergedRecommendations.length > 0 && !showRecommendations) {
+      setShowRecommendations(true)
+    }
+  }, [selectedQuestionType, mergedRecommendations.length, showRecommendations])
+
   // 두 추천 소스를 병합 (id 기준으로 중복 제거, Smart 우선 노출)
   const mergedRecommendations = useMemo(() => {
     const map = new Map<string, StatisticalMethod>()
@@ -193,7 +203,9 @@ export function PurposeInputStep({
       logger.warn('Method requirements not met', { warnings: requirements.warnings })
     }
 
+    // 로컬 상태와 전역 스토어 모두 업데이트하여 canProceedToNext가 true가 되도록 함
     setSelectedMethod(method)
+    setSelectedMethodInStore(method)
 
     // 변수 자동 매핑
     if (validationResults?.columns) {
@@ -205,7 +217,8 @@ export function PurposeInputStep({
       }))
 
       const mapping = autoMapVariables(method, columnInfo)
-      setVariableMapping(mapping)
+      setVariableMapping(mapping) // 로컬 상태
+      setVariableMappingInStore(mapping) // 스토어에도 저장
       setShowVariableMapping(true)
     }
   }

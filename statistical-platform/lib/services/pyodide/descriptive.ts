@@ -128,6 +128,101 @@ export class DescriptiveService extends BasePyodideService implements IDescripti
   }
 
   /**
+   * Anderson-Darling 정규성 검정 (단일 메서드)
+   * - SciPy는 p-value를 직접 제공하지 않으므로, 임계값 배열과 통계량의 위치로 근사 p-value를 산출합니다.
+   */
+  async andersonDarlingTest(data: number[]): Promise<{
+    statistic: number
+    criticalValues: number[]
+    significanceLevels: number[]
+    pValue: number
+    isNormal: boolean
+  }> {
+    await this.initialize()
+    this.setData('data_array', data)
+
+    const py_result = await this.runPythonSafely(`
+      # 결측값 제거
+      clean_data = np.array([x for x in data_array if x is not None and not np.isnan(x)])
+
+      if len(clean_data) < 3:
+        py_result = {'error': 'Insufficient data for Anderson-Darling'}
+      else:
+        anderson_result = stats.anderson(clean_data, dist='norm')
+        stat = float(anderson_result.statistic)
+        crit = [float(cv) for cv in anderson_result.critical_values]
+        levels = [float(sl) for sl in anderson_result.significance_level]
+
+        # 근사 p-value 산출: 통계량이 통과하는 첫 임계값의 유의수준(%)을 p로 사용
+        p_est = None
+        for i in range(len(crit)):
+          if stat < crit[i]:
+            p_est = levels[i] / 100.0
+            break
+        if p_est is None:
+          # 가장 엄격한 임계값보다 크면 p < 최저 유의수준, 보수적으로 절반으로 근사
+          p_est = (levels[-1] / 100.0) / 2.0
+
+        py_result = {
+          'statistic': stat,
+          'criticalValues': crit,
+          'significanceLevels': levels,
+          'pValue': float(p_est),
+          'isNormal': bool(stat < crit[2])  # 통상 5% 기준
+        }
+
+      import json
+      result = json.dumps(py_result)
+      result
+    `)
+
+    const result = JSON.parse(py_result)
+    if (result.error) {
+      throw new Error(result.error)
+    }
+
+    return result
+  }
+
+  /**
+   * D'Agostino-Pearson 정규성 검정 (scipy.stats.normaltest)
+   */
+  async dagostinoPearsonTest(data: number[]): Promise<{
+    statistic: number
+    pValue: number
+    isNormal: boolean
+  }> {
+    await this.initialize()
+    this.setData('data_array', data)
+
+    const py_result = await this.runPythonSafely(`
+      # 결측값 제거
+      clean_data = np.array([x for x in data_array if x is not None and not np.isnan(x)])
+
+      if len(clean_data) < 8:
+        py_result = {'error': "Insufficient data for D'Agostino-Pearson"}
+      else:
+        k2, p = stats.normaltest(clean_data)
+        py_result = {
+          'statistic': float(k2),
+          'pValue': float(p),
+          'isNormal': bool(p > 0.05)
+        }
+
+      import json
+      result = json.dumps(py_result)
+      result
+    `)
+
+    const result = JSON.parse(py_result)
+    if (result.error) {
+      throw new Error(result.error)
+    }
+
+    return result
+  }
+
+  /**
    * 등분산성 검정 (Levene, Bartlett, Fligner-Killeen)
    */
   async homogeneityTest(groups: number[][], method: string = 'levene'): Promise<HomogeneityTestResult> {

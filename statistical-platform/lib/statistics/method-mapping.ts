@@ -387,6 +387,12 @@ export function recommendMethods(dataProfile: {
     }
   }
 
+  // 두 요인(범주형 2개 이상) + 수치형 1개 이상이면 이원분산분석 추천
+  if (dataProfile.categoricalVars >= 2 && dataProfile.numericVars >= 1) {
+    const twoWay = STATISTICAL_METHODS.find(m => m.id === 'two-way-anova')
+    if (twoWay) recommendations.push(twoWay)
+  }
+
   // 시간 변수가 있으면 시계열 분석
   if (dataProfile.hasTimeVar && dataProfile.totalRows >= 50) {
     recommendations.push(STATISTICAL_METHODS.find(m => m.id === 'time-decomposition')!)

@@ -58,6 +58,7 @@ export default function SmartFlowPageRefactored() {
     uploadedData,
     validationResults,
     selectedMethod,
+    variableMapping,
     analysisResults,
     isLoading,
     error,
@@ -340,7 +341,7 @@ export default function SmartFlowPageRefactored() {
                   <Suspense fallback={<div className="h-64 animate-pulse bg-muted rounded" />}>
                     <AnalysisExecutionStep
                       selectedMethod={selectedMethod}
-                      variableMapping={{}}
+                      variableMapping={variableMapping || {}}
                       onAnalysisComplete={handleAnalysisComplete}
                       onNext={goToNextStep}
                       onPrevious={goToPreviousStep}

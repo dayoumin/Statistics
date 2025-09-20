@@ -6,7 +6,17 @@ import {
   AnalysisResult,
   DataRow
 } from '@/types/smart-flow'
+import type { VariableMapping } from '@/lib/statistics/variable-mapping'
 import { DataCharacteristics } from '@/lib/statistics/data-type-detector'
+
+/**
+ * 스토어(Store)란?
+ * - 전역 상태 저장소입니다. 이 프로젝트는 Zustand를 사용해 화면(컴포넌트) 전반에서 공유되는 상태를 한 곳에서 관리합니다.
+ * - 목적: 단계(currentStep), 업로드 데이터(uploadedData), 검증 결과(validationResults), 선택한 방법(selectedMethod) 등
+ *   여러 컴포넌트가 함께 쓰는 값을 "단일 출처(Single Source of Truth)"로 유지하여 일관성 있게 흐름을 제어합니다.
+ * - 장점: 어떤 컴포넌트에서 값을 바꿔도 다른 컴포넌트가 즉시 반영하고, 다음 단계 활성화 같은 조건도 한 곳(canProceedToNext)에서 관리할 수 있습니다.
+ * - 지속성: sessionStorage에 일부 상태를 저장하여 새로고침 후에도 분석 진행 맥락을 복원합니다(파일 객체는 제외).
+ */
 
 // 분석 히스토리 타입
 export interface AnalysisHistory {
@@ -55,6 +65,7 @@ interface SmartFlowState {
   // 데이터
   uploadedFile: File | null
   uploadedData: DataRow[] | null
+  uploadedFileName?: string | null
 
   // 데이터 특성 (새로 추가)
   dataCharacteristics: DataCharacteristics | null
@@ -68,6 +79,7 @@ interface SmartFlowState {
   // 분석 설정
   analysisPurpose: string
   selectedMethod: StatisticalMethod | null
+  variableMapping: VariableMapping | null
 
   // 분석 결과
   analysisResults: AnalysisResult | null
@@ -85,11 +97,13 @@ interface SmartFlowState {
   addCompletedStep: (step: number) => void
   setUploadedFile: (file: File | null) => void
   setUploadedData: (data: DataRow[] | null) => void
+  setUploadedFileName: (name: string | null) => void
   setDataCharacteristics: (characteristics: DataCharacteristics | null) => void
   setValidationResults: (results: ValidationResults | null) => void
   setAssumptionResults: (results: StatisticalAssumptions | null) => void
   setAnalysisPurpose: (purpose: string) => void
   setSelectedMethod: (method: StatisticalMethod | null) => void
+  setVariableMapping: (mapping: VariableMapping | null) => void
   setAnalysisResults: (results: AnalysisResult | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
@@ -117,11 +131,13 @@ const initialState = {
   completedSteps: [],
   uploadedFile: null,
   uploadedData: null,
+  uploadedFileName: null,
   dataCharacteristics: null,
   validationResults: null,
   assumptionResults: null,
   analysisPurpose: '',
   selectedMethod: null,
+  variableMapping: null,
   analysisResults: null,
   analysisHistory: [],
   currentHistoryId: null,
@@ -141,13 +157,15 @@ export const useSmartFlowStore = create<SmartFlowState>()(
         completedSteps: [...new Set([...state.completedSteps, step])]
       })),
       
-      setUploadedFile: (file) => set({ uploadedFile: file }),
+      setUploadedFile: (file) => set({ uploadedFile: file, uploadedFileName: file?.name || null }),
       setUploadedData: (data) => set({ uploadedData: data }),
+      setUploadedFileName: (name) => set({ uploadedFileName: name }),
       setDataCharacteristics: (characteristics) => set({ dataCharacteristics: characteristics }),
       setValidationResults: (results) => set({ validationResults: results }),
       setAssumptionResults: (results) => set({ assumptionResults: results }),
       setAnalysisPurpose: (purpose) => set({ analysisPurpose: purpose }),
       setSelectedMethod: (method) => set({ selectedMethod: method }),
+      setVariableMapping: (mapping) => set({ variableMapping: mapping }),
       setAnalysisResults: (results) => set({ analysisResults: results }),
       setLoading: (loading) => set({ isLoading: loading }),
       setError: (error) => set({ error: error }),
@@ -285,7 +303,9 @@ export const useSmartFlowStore = create<SmartFlowState>()(
         uploadedData: state.uploadedData,
         validationResults: state.validationResults,
         selectedMethod: state.selectedMethod,
+        variableMapping: state.variableMapping,
         analysisResults: state.analysisResults,
+        uploadedFileName: state.uploadedFileName,
         // File 객체는 직렬화할 수 없으므로 제외
       }),
     }

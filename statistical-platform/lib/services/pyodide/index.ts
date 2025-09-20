@@ -119,6 +119,15 @@ export class PyodideStatisticsService {
     return this.descriptiveService.kolmogorovSmirnovTest(data)
   }
 
+  // 추가: 개별 정규성 검정 메서드 노출
+  async andersonDarlingTest(data: number[]): Promise<{ statistic: number; criticalValues: number[]; significanceLevels: number[]; pValue: number; isNormal: boolean }> {
+    return this.descriptiveService.andersonDarlingTest(data)
+  }
+
+  async dagostinoPearsonTest(data: number[]): Promise<{ statistic: number; pValue: number; isNormal: boolean }> {
+    return this.descriptiveService.dagostinoPearsonTest(data)
+  }
+
   // =================
   // 가설검정 메서드들
   // =================
@@ -223,6 +232,10 @@ export class PyodideStatisticsService {
     return this.nonparametricService.friedman(data)
   }
 
+  async friedmanTest(data: number[][]): Promise<StatisticalTestResult> {
+    return this.nonparametricService.friedman(data)
+  }
+
   async chiSquareTest(observedMatrix: number[][], correction?: boolean): Promise<StatisticalTestResult> {
     return this.nonparametricService.chiSquareTest(observedMatrix, correction)
   }
@@ -256,6 +269,10 @@ export class PyodideStatisticsService {
 
   async clustering(data: number[][], nClusters: number, method?: string): Promise<ClusteringResult> {
     return this.advancedService.clustering(data, nClusters, method)
+  }
+
+  async kMeansClustering(data: number[][], nClusters: number): Promise<ClusteringResult> {
+    return this.advancedService.clustering(data, nClusters, 'kmeans')
   }
 
   async timeSeriesDecomposition(data: number[], period?: number): Promise<TimeSeriesResult> {
@@ -295,6 +312,113 @@ export class PyodideStatisticsService {
       tStatistic: result.tStatistics?.[1] || 0,
       predictions: result.fitted,
       df: result.degreesOfFreedom
+    }
+  }
+
+  // =================
+  // 통합 가정 검정 메서드
+  // =================
+
+  async checkAllAssumptions(data: any, options: { alpha?: number; normalityRule?: string } = {}): Promise<any> {
+    const { alpha = 0.05, normalityRule = 'shapiro' } = options
+    const results: any = {
+      normality: {},
+      homogeneity: null,
+      outliers: {},
+      summary: {
+        canUseParametric: true,
+        violations: []
+      }
+    }
+
+    try {
+      // 데이터 구조 파악 (단일 열 또는 여러 열)
+      let columns: any[] = []
+      if (Array.isArray(data) && data.length > 0) {
+        if (typeof data[0] === 'object' && !Array.isArray(data[0])) {
+          // 객체 배열인 경우 (DataRow[])
+          const keys = Object.keys(data[0])
+          for (const key of keys) {
+            const values = data.map((row: any) => row[key]).filter((v: any) => typeof v === 'number' && !isNaN(v))
+            if (values.length > 0) {
+              columns.push({ name: key, values })
+            }
+          }
+        } else if (typeof data[0] === 'number') {
+          // 단일 숫자 배열
+          columns.push({ name: 'data', values: data })
+        } else if (Array.isArray(data[0])) {
+          // 2차원 배열 (여러 그룹)
+          data.forEach((group: any[], idx: number) => {
+            columns.push({ name: `group${idx + 1}`, values: group })
+          })
+        }
+      }
+
+      // 1. 정규성 검정
+      for (const col of columns) {
+        if (col.values.length >= 3) {
+          const normalityTest = await this.shapiroWilk(col.values)
+          results.normality[col.name] = {
+            ...normalityTest,
+            summary: {
+              isNormal: normalityTest.pValue > alpha,
+              method: 'Shapiro-Wilk'
+            }
+          }
+
+          if (normalityTest.pValue <= alpha) {
+            results.summary.canUseParametric = false
+            if (!results.summary.violations.includes('정규성 위반')) {
+              results.summary.violations.push('정규성 위반')
+            }
+          }
+        }
+      }
+
+      // 2. 등분산성 검정 (그룹이 2개 이상일 때)
+      if (columns.length >= 2) {
+        const groups = columns.map(col => col.values)
+        const homogeneityTest = await this.leveneTest(groups)
+        results.homogeneity = homogeneityTest
+
+        if (homogeneityTest.pValue <= alpha) {
+          results.summary.canUseParametric = false
+          if (!results.summary.violations.includes('등분산성 위반')) {
+            results.summary.violations.push('등분산성 위반')
+          }
+        }
+      }
+
+      // 3. 이상치 검정
+      for (const col of columns) {
+        if (col.values.length >= 4) {
+          const outlierTest = await this.detectOutliers(col.values)
+          results.outliers[col.name] = outlierTest
+
+          if (outlierTest.outliers.length > col.values.length * 0.1) {
+            if (!results.summary.violations.includes('이상치 과다')) {
+              results.summary.violations.push('이상치 과다')
+            }
+          }
+        }
+      }
+
+      // 4. 표본 크기 확인
+      const minSampleSize = Math.min(...columns.map(col => col.values.length))
+      if (minSampleSize < 30) {
+        if (!results.summary.violations.includes('표본 크기 부족')) {
+          results.summary.violations.push('표본 크기 부족')
+        }
+      }
+
+      return results
+    } catch (error) {
+      console.error('Error in checkAllAssumptions:', error)
+      return {
+        ...results,
+        error: error instanceof Error ? error.message : '가정 검정 중 오류 발생'
+      }
     }
   }
 
