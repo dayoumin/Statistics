@@ -114,7 +114,8 @@ export class RegressionService extends BasePyodideService implements IRegression
         py_result['confidenceIntervals'][0] = [float(intercept_ci_lower), float(intercept_ci_upper)]
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -246,7 +247,8 @@ export class RegressionService extends BasePyodideService implements IRegression
             }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -391,7 +393,8 @@ export class RegressionService extends BasePyodideService implements IRegression
             }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)

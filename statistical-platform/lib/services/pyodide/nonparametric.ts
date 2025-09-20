@@ -71,7 +71,8 @@ export class NonparametricService extends BasePyodideService implements INonpara
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -139,7 +140,8 @@ export class NonparametricService extends BasePyodideService implements INonpara
           }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -214,7 +216,8 @@ export class NonparametricService extends BasePyodideService implements INonpara
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -280,7 +283,8 @@ export class NonparametricService extends BasePyodideService implements INonpara
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -366,7 +370,8 @@ export class NonparametricService extends BasePyodideService implements INonpara
           py_result['warning'] = 'More than 20% of cells have expected frequency < 5. Results may be unreliable.'
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -475,7 +480,8 @@ export class NonparametricService extends BasePyodideService implements INonpara
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)

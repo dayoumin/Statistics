@@ -125,7 +125,7 @@ export class StatisticalCalculator {
       return { success: false, error: '유효한 숫자 데이터가 없습니다' }
     }
 
-    const result = await this.pyodideService.calculateDescriptiveStatistics(values)
+    const result = await this.pyodideService.calculateDescriptiveStats(values)
 
     return {
       success: true,

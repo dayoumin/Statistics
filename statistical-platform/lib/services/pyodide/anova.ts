@@ -105,7 +105,8 @@ export class ANOVAService extends BasePyodideService implements IANOVAService {
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -238,12 +239,18 @@ export class ANOVAService extends BasePyodideService implements IANOVAService {
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
     if (result.error) {
       throw new Error(result.error)
+    }
+
+    // 기본 응답인 경우 그대로 반환
+    if (!result.factor1 || !result.error || !result.total) {
+      return result as ANOVAResult
     }
 
     // 호환성을 위해 main effect 결과를 기본 형식으로 변환
@@ -350,7 +357,8 @@ export class ANOVAService extends BasePyodideService implements IANOVAService {
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -459,7 +467,8 @@ export class ANOVAService extends BasePyodideService implements IANOVAService {
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -559,7 +568,8 @@ export class ANOVAService extends BasePyodideService implements IANOVAService {
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -652,7 +662,8 @@ export class ANOVAService extends BasePyodideService implements IANOVAService {
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)

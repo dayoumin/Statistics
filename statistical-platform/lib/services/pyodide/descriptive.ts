@@ -58,7 +58,8 @@ export class DescriptiveService extends BasePyodideService implements IDescripti
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -114,7 +115,8 @@ export class DescriptiveService extends BasePyodideService implements IDescripti
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -173,7 +175,8 @@ export class DescriptiveService extends BasePyodideService implements IDescripti
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -249,7 +252,8 @@ export class DescriptiveService extends BasePyodideService implements IDescripti
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -335,7 +339,8 @@ export class DescriptiveService extends BasePyodideService implements IDescripti
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -410,7 +415,8 @@ export class DescriptiveService extends BasePyodideService implements IDescripti
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)

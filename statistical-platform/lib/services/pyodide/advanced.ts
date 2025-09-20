@@ -115,7 +115,8 @@ export class AdvancedService extends BasePyodideService implements IAdvancedServ
             }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -249,7 +250,8 @@ export class AdvancedService extends BasePyodideService implements IAdvancedServ
               py_result['noiseRatio'] = float(n_noise / len(X_clean))
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -330,7 +332,8 @@ export class AdvancedService extends BasePyodideService implements IAdvancedServ
           }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -444,7 +447,8 @@ export class AdvancedService extends BasePyodideService implements IAdvancedServ
           }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)

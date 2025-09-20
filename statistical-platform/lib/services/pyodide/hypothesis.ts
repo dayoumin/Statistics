@@ -71,7 +71,8 @@ export class HypothesisService extends BasePyodideService implements IHypothesis
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -155,7 +156,8 @@ export class HypothesisService extends BasePyodideService implements IHypothesis
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -234,7 +236,8 @@ export class HypothesisService extends BasePyodideService implements IHypothesis
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -306,7 +309,8 @@ export class HypothesisService extends BasePyodideService implements IHypothesis
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -379,7 +383,8 @@ export class HypothesisService extends BasePyodideService implements IHypothesis
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
@@ -456,7 +461,8 @@ export class HypothesisService extends BasePyodideService implements IHypothesis
         }
 
       import json
-      json.dumps(py_result)
+      result = json.dumps(py_result)
+      result
     `)
 
     const result = JSON.parse(py_result)
